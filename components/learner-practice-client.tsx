@@ -17,6 +17,7 @@ type PracticeQuestion = Question & {
 };
 
 type SessionMode = "setup" | "in_progress" | "finished";
+type PracticeMode = "tutor" | "timed";
 
 export default function LearnerPracticeClient() {
   const [tracks, setTracks] = useState<ExamTrack[]>([]);
@@ -29,6 +30,7 @@ export default function LearnerPracticeClient() {
   const [selectedDisciplineId, setSelectedDisciplineId] = useState("");
   const [selectedCompetencyId, setSelectedCompetencyId] = useState("");
   const [questionCount, setQuestionCount] = useState("10");
+  const [practiceMode, setPracticeMode] = useState<PracticeMode>("tutor");
 
   const [mode, setMode] = useState<SessionMode>("setup");
   const [sessionId, setSessionId] = useState("");
@@ -39,6 +41,8 @@ export default function LearnerPracticeClient() {
   const [results, setResults] = useState<Record<string, { selectedOptionId: string; isCorrect: boolean }>>(
     {}
   );
+
+  const [timeRemainingSeconds, setTimeRemainingSeconds] = useState(0);
 
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
@@ -127,6 +131,23 @@ export default function LearnerPracticeClient() {
     loadSetupData();
   }, []);
 
+  useEffect(() => {
+    if (mode !== "in_progress" || practiceMode !== "timed") {
+      return;
+    }
+
+    if (timeRemainingSeconds <= 0) {
+      finishSession();
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTimeRemainingSeconds((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [mode, practiceMode, timeRemainingSeconds]);
+
   const visibleDisciplines = useMemo(() => {
     const visibleTrackIds = new Set(tracks.map((track) => track.id));
     return disciplines.filter(
@@ -196,6 +217,20 @@ export default function LearnerPracticeClient() {
     return Object.values(results).filter((result) => result.isCorrect).length;
   }, [results]);
 
+  const timedTotalSeconds = useMemo(() => {
+    const perQuestionSeconds = 90;
+    const parsedCount = Number(questionCount);
+    if (Number.isNaN(parsedCount) || parsedCount < 1) return 0;
+    return parsedCount * perQuestionSeconds;
+  }, [questionCount]);
+
+  function formatTime(totalSeconds: number) {
+    const safe = Math.max(0, totalSeconds);
+    const minutes = Math.floor(safe / 60);
+    const seconds = safe % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+
   async function startSession() {
     setStarting(true);
     setError("");
@@ -245,7 +280,7 @@ export default function LearnerPracticeClient() {
         user_id: guestUserId,
         exam_track_id: selectedTrackId,
         discipline_id: selectedDisciplineId,
-        mode: "tutor",
+        mode: practiceMode,
         max_questions: chosenQuestions.length
       })
       .select()
@@ -280,6 +315,7 @@ export default function LearnerPracticeClient() {
     setSubmitted(false);
     setResults({});
     setMode("in_progress");
+    setTimeRemainingSeconds(practiceMode === "timed" ? chosenQuestions.length * 90 : 0);
     setStarting(false);
   }
 
@@ -318,15 +354,7 @@ export default function LearnerPracticeClient() {
     }
   }
 
-  async function goToNext() {
-    if (currentIndex < sessionQuestions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-      setSelectedOptionId("");
-      setSubmitted(false);
-      setError("");
-      return;
-    }
-
+  async function finishSession() {
     await supabase
       .from("study_sessions")
       .update({
@@ -337,6 +365,40 @@ export default function LearnerPracticeClient() {
     setMode("finished");
   }
 
+  async function goToNext() {
+    if (currentIndex < sessionQuestions.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+      setSelectedOptionId("");
+      setSubmitted(false);
+      setError("");
+      return;
+    }
+
+    await finishSession();
+  }
+
+  async function handleTimedNext() {
+    if (!currentQuestion) return;
+
+    if (!submitted) {
+      if (!selectedOptionId) {
+        setError("Please select an answer choice.");
+        return;
+      }
+      await submitAnswer();
+    }
+
+    if (currentIndex < sessionQuestions.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+      setSelectedOptionId("");
+      setSubmitted(false);
+      setError("");
+      return;
+    }
+
+    await finishSession();
+  }
+
   function restartSetup() {
     setMode("setup");
     setSessionId("");
@@ -345,9 +407,12 @@ export default function LearnerPracticeClient() {
     setSelectedOptionId("");
     setSubmitted(false);
     setResults({});
+    setTimeRemainingSeconds(0);
     setMessage("");
     setError("");
   }
+
+  const selectedResult = currentQuestion ? results[currentQuestion.id] : undefined;
 
   return (
     <div style={{ display: "grid", gap: "24px" }}>
@@ -362,13 +427,23 @@ export default function LearnerPracticeClient() {
           }}
         >
           <h2 style={{ marginTop: 0, marginBottom: "16px", color: "#0f2d69" }}>
-            Start Tutor Block
+            Start Practice Block
           </h2>
 
           {loading ? (
             <p style={{ color: "#475569" }}>Loading practice setup...</p>
           ) : (
             <>
+              <label style={labelStyle}>Mode</label>
+              <select
+                value={practiceMode}
+                onChange={(e) => setPracticeMode(e.target.value as PracticeMode)}
+                style={inputStyle}
+              >
+                <option value="tutor">Tutor Mode</option>
+                <option value="timed">Timed Mode</option>
+              </select>
+
               <label style={labelStyle}>Exam Track</label>
               <select
                 value={selectedTrackId}
@@ -441,6 +516,21 @@ export default function LearnerPracticeClient() {
                 Available approved questions: {availableQuestions.length}
               </div>
 
+              {practiceMode === "timed" ? (
+                <div
+                  style={{
+                    marginBottom: "16px",
+                    padding: "12px",
+                    borderRadius: "10px",
+                    backgroundColor: "#fff7ed",
+                    color: "#9a3412",
+                    fontWeight: 700
+                  }}
+                >
+                  Estimated timer: {formatTime(timedTotalSeconds)}
+                </div>
+              ) : null}
+
               <button
                 onClick={startSession}
                 disabled={starting || availableQuestions.length === 0}
@@ -456,7 +546,7 @@ export default function LearnerPracticeClient() {
                     starting || availableQuestions.length === 0 ? "not-allowed" : "pointer"
                 }}
               >
-                {starting ? "Starting..." : "Start Tutor Block"}
+                {starting ? "Starting..." : `Start ${practiceMode === "timed" ? "Timed" : "Tutor"} Block`}
               </button>
             </>
           )}
@@ -485,7 +575,7 @@ export default function LearnerPracticeClient() {
           >
             <div
               style={{
-                backgroundColor: "#0f2d69",
+                backgroundColor: practiceMode === "timed" ? "#7c2d12" : "#0f2d69",
                 color: "#ffffff",
                 padding: "14px 18px",
                 display: "flex",
@@ -498,7 +588,7 @@ export default function LearnerPracticeClient() {
               <span>
                 Question {currentIndex + 1} of {sessionQuestions.length}
               </span>
-              <span>Tutor Mode</span>
+              <span>{practiceMode === "timed" ? `Time ${formatTime(timeRemainingSeconds)}` : "Tutor Mode"}</span>
             </div>
 
             <div style={{ padding: "24px" }}>
@@ -523,14 +613,15 @@ export default function LearnerPracticeClient() {
               <div style={{ display: "grid", gap: "12px", marginTop: "20px" }}>
                 {currentQuestion.options.map((option) => {
                   const isSelected = selectedOptionId === option.id;
-                  const showCorrect = submitted && option.is_correct;
-                  const showWrong = submitted && isSelected && !option.is_correct;
+                  const showCorrect = practiceMode === "tutor" && submitted && option.is_correct;
+                  const showWrong =
+                    practiceMode === "tutor" && submitted && isSelected && !option.is_correct;
 
                   return (
                     <button
                       key={option.id}
-                      onClick={() => !submitted && setSelectedOptionId(option.id)}
-                      disabled={submitted}
+                      onClick={() => setSelectedOptionId(option.id)}
+                      disabled={practiceMode === "tutor" && submitted}
                       style={{
                         textAlign: "left",
                         border: showCorrect
@@ -538,21 +629,25 @@ export default function LearnerPracticeClient() {
                           : showWrong
                             ? "2px solid #dc2626"
                             : isSelected
-                              ? "2px solid #0f2d69"
+                              ? `2px solid ${practiceMode === "timed" ? "#7c2d12" : "#0f2d69"}`
                               : "1px solid #cbd5e1",
                         backgroundColor: showCorrect
                           ? "#f0fdf4"
                           : showWrong
                             ? "#fef2f2"
                             : isSelected
-                              ? "#eff6ff"
+                              ? practiceMode === "timed"
+                                ? "#fff7ed"
+                                : "#eff6ff"
                               : "#ffffff",
                         borderRadius: "12px",
                         padding: "14px",
-                        cursor: submitted ? "default" : "pointer"
+                        cursor: practiceMode === "tutor" && submitted ? "default" : "pointer"
                       }}
                     >
-                      <strong style={{ color: "#0f2d69" }}>{option.option_label}.</strong>{" "}
+                      <strong style={{ color: practiceMode === "timed" ? "#7c2d12" : "#0f2d69" }}>
+                        {option.option_label}.
+                      </strong>{" "}
                       <span style={{ color: "#334155" }}>{option.option_text}</span>
                     </button>
                   );
@@ -567,19 +662,19 @@ export default function LearnerPracticeClient() {
                   flexWrap: "wrap"
                 }}
               >
-                {!submitted ? (
-                  <button
-                    onClick={submitAnswer}
-                    style={primaryButtonStyle}
-                  >
-                    Submit Answer
-                  </button>
+                {practiceMode === "tutor" ? (
+                  !submitted ? (
+                    <button onClick={submitAnswer} style={primaryButtonStyle}>
+                      Submit Answer
+                    </button>
+                  ) : (
+                    <button onClick={goToNext} style={primaryButtonStyle}>
+                      {currentIndex === sessionQuestions.length - 1 ? "Finish Block" : "Next Question"}
+                    </button>
+                  )
                 ) : (
-                  <button
-                    onClick={goToNext}
-                    style={primaryButtonStyle}
-                  >
-                    {currentIndex === sessionQuestions.length - 1 ? "Finish Block" : "Next Question"}
+                  <button onClick={handleTimedNext} style={timedButtonStyle}>
+                    {currentIndex === sessionQuestions.length - 1 ? "Submit Exam" : "Next"}
                   </button>
                 )}
               </div>
@@ -598,17 +693,42 @@ export default function LearnerPracticeClient() {
           >
             <div
               style={{
-                backgroundColor: "#e8f0ff",
-                color: "#0f2d69",
+                backgroundColor: practiceMode === "timed" ? "#ffedd5" : "#e8f0ff",
+                color: practiceMode === "timed" ? "#7c2d12" : "#0f2d69",
                 padding: "14px 18px",
                 fontWeight: 700
               }}
             >
-              Detailed Guidance
+              {practiceMode === "timed" ? "Exam Notes" : "Detailed Guidance"}
             </div>
 
             <div style={{ padding: "24px" }}>
-              {!submitted ? (
+              {practiceMode === "timed" ? (
+                !submitted ? (
+                  <p style={{ color: "#475569", lineHeight: 1.6 }}>
+                    In timed mode, explanations are hidden until the block is complete.
+                  </p>
+                ) : (
+                  <>
+                    <div
+                      style={{
+                        marginBottom: "16px",
+                        padding: "12px",
+                        borderRadius: "10px",
+                        backgroundColor: selectedResult?.isCorrect ? "#dcfce7" : "#fee2e2",
+                        color: selectedResult?.isCorrect ? "#166534" : "#b91c1c",
+                        fontWeight: 700
+                      }}
+                    >
+                      Answer recorded.
+                    </div>
+
+                    <p style={{ color: "#475569", lineHeight: 1.6 }}>
+                      Continue to the next question. Full review appears after the exam ends.
+                    </p>
+                  </>
+                )
+              ) : !submitted ? (
                 <p style={{ color: "#475569", lineHeight: 1.6 }}>
                   Submit your answer to view the explanation.
                 </p>
@@ -619,13 +739,12 @@ export default function LearnerPracticeClient() {
                       marginBottom: "16px",
                       padding: "12px",
                       borderRadius: "10px",
-                      backgroundColor:
-                        results[currentQuestion.id]?.isCorrect ? "#dcfce7" : "#fee2e2",
-                      color: results[currentQuestion.id]?.isCorrect ? "#166534" : "#b91c1c",
+                      backgroundColor: selectedResult?.isCorrect ? "#dcfce7" : "#fee2e2",
+                      color: selectedResult?.isCorrect ? "#166534" : "#b91c1c",
                       fontWeight: 700
                     }}
                   >
-                    {results[currentQuestion.id]?.isCorrect ? "Correct" : "Incorrect"}
+                    {selectedResult?.isCorrect ? "Correct" : "Incorrect"}
                   </div>
 
                   <h3 style={sideHeadingStyle}>Explanation</h3>
@@ -664,11 +783,13 @@ export default function LearnerPracticeClient() {
             background: "#ffffff",
             borderRadius: "12px",
             padding: "24px",
-            maxWidth: "840px",
+            maxWidth: "940px",
             boxShadow: "0 1px 3px rgba(0,0,0,0.08)"
           }}
         >
-          <h2 style={{ marginTop: 0, color: "#0f2d69" }}>Block Complete</h2>
+          <h2 style={{ marginTop: 0, color: practiceMode === "timed" ? "#7c2d12" : "#0f2d69" }}>
+            {practiceMode === "timed" ? "Timed Block Complete" : "Block Complete"}
+          </h2>
 
           <div
             style={{
@@ -684,11 +805,17 @@ export default function LearnerPracticeClient() {
             <span style={summaryPillStyle}>
               Accuracy: {sessionQuestions.length > 0 ? Math.round((score / sessionQuestions.length) * 100) : 0}%
             </span>
+            {practiceMode === "timed" ? (
+              <span style={summaryPillStyle}>Mode: Timed</span>
+            ) : (
+              <span style={summaryPillStyle}>Mode: Tutor</span>
+            )}
           </div>
 
           <div style={{ display: "grid", gap: "12px", marginBottom: "24px" }}>
             {sessionQuestions.map((question, index) => {
               const result = results[question.id];
+              const correct = result?.isCorrect ?? false;
               return (
                 <article
                   key={question.id}
@@ -715,15 +842,32 @@ export default function LearnerPracticeClient() {
                     {question.title || "Untitled question"}
                   </h3>
 
-                  <p style={{ margin: 0, color: "#475569", lineHeight: 1.5 }}>
-                    {result?.isCorrect ? "Correct" : "Incorrect"}
+                  <p style={{ margin: "0 0 8px 0", color: correct ? "#166534" : "#b91c1c" }}>
+                    {correct ? "Correct" : "Incorrect"}
                   </p>
+
+                  {practiceMode === "timed" ? (
+                    <>
+                      <p style={{ margin: "0 0 8px 0", color: "#475569", lineHeight: 1.6 }}>
+                        {question.explanation}
+                      </p>
+
+                      {question.strategy_text ? (
+                        <p style={{ margin: "0 0 8px 0", color: "#475569", lineHeight: 1.6 }}>
+                          <strong>Strategy:</strong> {question.strategy_text}
+                        </p>
+                      ) : null}
+                    </>
+                  ) : null}
                 </article>
               );
             })}
           </div>
 
-          <button onClick={restartSetup} style={primaryButtonStyle}>
+          <button
+            onClick={restartSetup}
+            style={practiceMode === "timed" ? timedButtonStyle : primaryButtonStyle}
+          >
             Start New Block
           </button>
         </section>
@@ -751,6 +895,16 @@ const inputStyle: React.CSSProperties = {
 
 const primaryButtonStyle: React.CSSProperties = {
   backgroundColor: "#0f2d69",
+  color: "#ffffff",
+  border: "none",
+  borderRadius: "10px",
+  padding: "12px 18px",
+  fontWeight: 700,
+  cursor: "pointer"
+};
+
+const timedButtonStyle: React.CSSProperties = {
+  backgroundColor: "#7c2d12",
   color: "#ffffff",
   border: "none",
   borderRadius: "10px",

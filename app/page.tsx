@@ -48,7 +48,7 @@ export default function HomePage() {
         </h2>
 
         <p style={{ color: "#475569", lineHeight: 1.6 }}>
-          Taxonomy, visibility controls, question authoring, review workflow, learner practice,
+          Taxonomy, visibility controls, question authoring, review workflow, tutor mode, timed mode,
           competency progress tracking, remediation mode, and contributor rewards are now active.
         </p>
 

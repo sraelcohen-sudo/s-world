@@ -50,13 +50,13 @@ export default function LearnPracticePage() {
               lineHeight: 1.6
             }}
           >
-            Start a tutor-mode practice block using approved questions from active exam tracks.
+            Start a tutor-mode or timed-mode practice block using approved questions from active exam tracks.
           </p>
         </div>
 
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <Link
-            href="/author/questions"
+            href="/learn/progress"
             style={{
               backgroundColor: "#ffffff",
               color: "#0f2d69",
@@ -67,22 +67,22 @@ export default function LearnPracticePage() {
               border: "1px solid #cbd5e1"
             }}
           >
-            Authoring
+            Competency Progress
           </Link>
 
           <Link
-            href="/reviewer/queue"
+            href="/learn/remediation"
             style={{
               backgroundColor: "#ffffff",
-              color: "#0f2d69",
+              color: "#7c2d12",
               textDecoration: "none",
               borderRadius: "10px",
               padding: "12px 16px",
               fontWeight: 700,
-              border: "1px solid #cbd5e1"
+              border: "1px solid #fed7aa"
             }}
           >
-            Review Queue
+            Remediation Mode
           </Link>
 
           <Link
