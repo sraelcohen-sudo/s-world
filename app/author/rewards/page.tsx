@@ -1,7 +1,7 @@
 import Link from "next/link";
-import QuestionAuthorClient from "@/components/question-author-client";
+import ContributorRewardsClient from "@/components/contributor-rewards-client";
 
-export default function AuthorQuestionsPage() {
+export default function AuthorRewardsPage() {
   return (
     <main
       style={{
@@ -40,38 +40,23 @@ export default function AuthorQuestionsPage() {
               fontSize: "36px"
             }}
           >
-            Question Submission
+            Contributor Rewards
           </h1>
           <p
             style={{
               margin: "10px 0 0 0",
               color: "#475569",
-              maxWidth: "840px",
+              maxWidth: "900px",
               lineHeight: 1.6
             }}
           >
-            Create exam-ready questions, classify them by taxonomy, and submit them
-            for review.
+            Check whether a contributor has earned the free month reward from approved questions.
           </p>
         </div>
 
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <Link
-            href="/author/rewards"
-            style={{
-              backgroundColor: "#0f2d69",
-              color: "#ffffff",
-              textDecoration: "none",
-              borderRadius: "10px",
-              padding: "12px 16px",
-              fontWeight: 700
-            }}
-          >
-            Rewards
-          </Link>
-
-          <Link
-            href="/admin/blueprints"
+            href="/author/questions"
             style={{
               backgroundColor: "#ffffff",
               color: "#0f2d69",
@@ -82,7 +67,7 @@ export default function AuthorQuestionsPage() {
               border: "1px solid #cbd5e1"
             }}
           >
-            Blueprints
+            Question Submission
           </Link>
 
           <Link
@@ -102,7 +87,7 @@ export default function AuthorQuestionsPage() {
         </div>
       </div>
 
-      <QuestionAuthorClient />
+      <ContributorRewardsClient />
     </main>
   );
 }

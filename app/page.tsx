@@ -49,7 +49,7 @@ export default function HomePage() {
 
         <p style={{ color: "#475569", lineHeight: 1.6 }}>
           Taxonomy, visibility controls, question authoring, review workflow, learner practice,
-          competency progress tracking, and remediation mode are now active.
+          competency progress tracking, remediation mode, and contributor rewards are now active.
         </p>
 
         <div
@@ -129,6 +129,21 @@ export default function HomePage() {
             }}
           >
             Question Authoring
+          </Link>
+
+          <Link
+            href="/author/rewards"
+            style={{
+              backgroundColor: "#ffffff",
+              color: "#0f2d69",
+              textDecoration: "none",
+              padding: "12px 18px",
+              borderRadius: "10px",
+              fontWeight: 700,
+              border: "1px solid #cbd5e1"
+            }}
+          >
+            Contributor Rewards
           </Link>
 
           <Link

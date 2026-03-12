@@ -38,6 +38,9 @@ type RawSubmissionListItem = {
   submitted_at: string;
   reviewer_notes: string | null;
   internal_notes: string | null;
+  author_name: string | null;
+  author_email: string | null;
+  approved_at: string | null;
   questions: SubmissionQuestion[] | SubmissionQuestion | null;
 };
 
@@ -48,6 +51,9 @@ type SubmissionListItem = {
   submitted_at: string;
   reviewer_notes: string | null;
   internal_notes: string | null;
+  author_name: string | null;
+  author_email: string | null;
+  approved_at: string | null;
   questions: SubmissionQuestion | null;
 };
 
@@ -100,6 +106,9 @@ export default function ReviewQueueClient() {
           submitted_at,
           reviewer_notes,
           internal_notes,
+          author_name,
+          author_email,
+          approved_at,
           questions (
             id,
             title,
@@ -298,7 +307,8 @@ export default function ReviewQueueClient() {
       .from("question_submissions")
       .update({
         status: nextSubmissionStatus,
-        reviewer_notes: comments.trim() || null
+        reviewer_notes: comments.trim() || null,
+        approved_at: decision === "approve" ? new Date().toISOString() : null
       })
       .eq("id", selectedSubmission.id);
 
@@ -425,7 +435,7 @@ export default function ReviewQueueClient() {
 
                 <p
                   style={{
-                    margin: 0,
+                    margin: "0 0 8px 0",
                     color: "#475569",
                     lineHeight: 1.5
                   }}
@@ -433,6 +443,17 @@ export default function ReviewQueueClient() {
                   {submission.questions?.lead_in ||
                     submission.questions?.stem.slice(0, 120) ||
                     "No preview available."}
+                </p>
+
+                <p
+                  style={{
+                    margin: 0,
+                    color: "#64748b",
+                    fontSize: "13px"
+                  }}
+                >
+                  {submission.author_name || "Unknown contributor"}
+                  {submission.author_email ? ` • ${submission.author_email}` : ""}
                 </p>
               </button>
             ))}
@@ -484,6 +505,10 @@ export default function ReviewQueueClient() {
                   <h2 style={{ margin: 0, color: "#0f2d69" }}>
                     {selectedSubmission.questions.title || "Untitled question"}
                   </h2>
+                  <p style={{ margin: "8px 0 0 0", color: "#475569" }}>
+                    Contributor: {selectedSubmission.author_name || "Unknown contributor"}
+                    {selectedSubmission.author_email ? ` • ${selectedSubmission.author_email}` : ""}
+                  </p>
                 </div>
 
                 <button

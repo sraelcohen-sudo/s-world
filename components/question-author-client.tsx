@@ -15,7 +15,7 @@ type OptionState = {
   text: string;
 };
 
-const defaultOptions: OptionState[] = [
+const createDefaultOptions = (): OptionState[] => [
   { label: "A", text: "" },
   { label: "B", text: "" },
   { label: "C", text: "" },
@@ -29,6 +29,9 @@ export default function QuestionAuthorClient() {
   const [competencies, setCompetencies] = useState<Competency[]>([]);
   const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
+
+  const [authorName, setAuthorName] = useState("");
+  const [authorEmail, setAuthorEmail] = useState("");
 
   const [selectedTrackId, setSelectedTrackId] = useState("");
   const [selectedDisciplineId, setSelectedDisciplineId] = useState("");
@@ -52,7 +55,7 @@ export default function QuestionAuthorClient() {
   const [authorReference, setAuthorReference] = useState("");
   const [estimatedTimeSeconds, setEstimatedTimeSeconds] = useState("90");
   const [correctOption, setCorrectOption] = useState("A");
-  const [options, setOptions] = useState<OptionState[]>(defaultOptions);
+  const [options, setOptions] = useState<OptionState[]>(createDefaultOptions());
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -226,7 +229,7 @@ export default function QuestionAuthorClient() {
     setAuthorReference("");
     setEstimatedTimeSeconds("90");
     setCorrectOption("A");
-    setOptions(defaultOptions.map((option) => ({ ...option })));
+    setOptions(createDefaultOptions());
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -235,11 +238,25 @@ export default function QuestionAuthorClient() {
     setMessage("");
     setError("");
 
+    const cleanAuthorName = authorName.trim();
+    const cleanAuthorEmail = authorEmail.trim().toLowerCase();
     const cleanStem = stem.trim();
     const cleanExplanation = explanation.trim();
     const cleanLeadIn = leadIn.trim();
     const cleanTitle = title.trim();
     const parsedTime = Number(estimatedTimeSeconds);
+
+    if (!cleanAuthorName) {
+      setError("Contributor name is required.");
+      setSaving(false);
+      return;
+    }
+
+    if (!cleanAuthorEmail || !cleanAuthorEmail.includes("@")) {
+      setError("A valid contributor email is required.");
+      setSaving(false);
+      return;
+    }
 
     if (!selectedTrackId || !selectedDisciplineId || !selectedCompetencyId) {
       setError("Please select an exam track, discipline, and competency.");
@@ -279,6 +296,8 @@ export default function QuestionAuthorClient() {
       return;
     }
 
+    const authorId = crypto.randomUUID();
+
     const { data: insertedQuestion, error: questionError } = await supabase
       .from("questions")
       .insert({
@@ -298,7 +317,7 @@ export default function QuestionAuthorClient() {
         discipline_id: selectedDisciplineId,
         competency_id: selectedCompetencyId,
         subtopic_id: selectedSubtopicId || null,
-        author_id: crypto.randomUUID(),
+        author_id: authorId,
         status: "submitted"
       })
       .select()
@@ -327,8 +346,10 @@ export default function QuestionAuthorClient() {
 
     const { error: submissionError } = await supabase.from("question_submissions").insert({
       question_id: insertedQuestion.id,
-      submitted_by: null,
-      status: "submitted"
+      submitted_by: authorId,
+      status: "submitted",
+      author_name: cleanAuthorName,
+      author_email: cleanAuthorEmail
     });
 
     if (submissionError) {
@@ -365,6 +386,22 @@ export default function QuestionAuthorClient() {
         </h2>
 
         <form onSubmit={handleSubmit}>
+          <label style={labelStyle}>Contributor Name</label>
+          <input
+            value={authorName}
+            onChange={(e) => setAuthorName(e.target.value)}
+            placeholder="Dr. Jane Smith"
+            style={inputStyle}
+          />
+
+          <label style={labelStyle}>Contributor Email</label>
+          <input
+            value={authorEmail}
+            onChange={(e) => setAuthorEmail(e.target.value)}
+            placeholder="jane@example.com"
+            style={inputStyle}
+          />
+
           <label style={labelStyle}>Exam Track</label>
           <select
             value={selectedTrackId}
