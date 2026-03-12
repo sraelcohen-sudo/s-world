@@ -34,7 +34,7 @@ export default function HomePage() {
           background: "#ffffff",
           borderRadius: "12px",
           padding: "24px",
-          maxWidth: "980px",
+          maxWidth: "1040px",
           boxShadow: "0 1px 3px rgba(0,0,0,0.08)"
         }}
       >
@@ -48,8 +48,7 @@ export default function HomePage() {
         </h2>
 
         <p style={{ color: "#475569", lineHeight: 1.6 }}>
-          Taxonomy, disciplines, competencies, blueprints, subtopics, question authoring,
-          and review workflow are now active.
+          Taxonomy, visibility controls, question authoring, review workflow, and the first learner practice engine are now active.
         </p>
 
         <div
@@ -144,6 +143,21 @@ export default function HomePage() {
             }}
           >
             Review Queue
+          </Link>
+
+          <Link
+            href="/learn/practice"
+            style={{
+              backgroundColor: "#ffffff",
+              color: "#0f2d69",
+              textDecoration: "none",
+              padding: "12px 18px",
+              borderRadius: "10px",
+              fontWeight: 700,
+              border: "1px solid #cbd5e1"
+            }}
+          >
+            Practice Block
           </Link>
         </div>
       </section>
