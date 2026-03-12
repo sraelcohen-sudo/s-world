@@ -34,7 +34,7 @@ export default function HomePage() {
           background: "#ffffff",
           borderRadius: "12px",
           padding: "24px",
-          maxWidth: "760px",
+          maxWidth: "920px",
           boxShadow: "0 1px 3px rgba(0,0,0,0.08)"
         }}
       >
@@ -48,7 +48,8 @@ export default function HomePage() {
         </h2>
 
         <p style={{ color: "#475569", lineHeight: 1.6 }}>
-          GitHub connected, Vercel deployed, Supabase schema loaded.
+          Taxonomy, disciplines, competencies, blueprints, and subtopics are in place.
+          The next active module is question authoring.
         </p>
 
         <div
@@ -70,7 +71,64 @@ export default function HomePage() {
               fontWeight: 700
             }}
           >
-            Open Taxonomy Admin
+            Taxonomy Admin
+          </Link>
+
+          <Link
+            href="/admin/disciplines"
+            style={{
+              backgroundColor: "#0f2d69",
+              color: "#ffffff",
+              textDecoration: "none",
+              padding: "12px 18px",
+              borderRadius: "10px",
+              fontWeight: 700
+            }}
+          >
+            Disciplines
+          </Link>
+
+          <Link
+            href="/admin/competencies"
+            style={{
+              backgroundColor: "#0f2d69",
+              color: "#ffffff",
+              textDecoration: "none",
+              padding: "12px 18px",
+              borderRadius: "10px",
+              fontWeight: 700
+            }}
+          >
+            Competencies
+          </Link>
+
+          <Link
+            href="/admin/blueprints"
+            style={{
+              backgroundColor: "#0f2d69",
+              color: "#ffffff",
+              textDecoration: "none",
+              padding: "12px 18px",
+              borderRadius: "10px",
+              fontWeight: 700
+            }}
+          >
+            Blueprints
+          </Link>
+
+          <Link
+            href="/author/questions"
+            style={{
+              backgroundColor: "#ffffff",
+              color: "#0f2d69",
+              textDecoration: "none",
+              padding: "12px 18px",
+              borderRadius: "10px",
+              fontWeight: 700,
+              border: "1px solid #cbd5e1"
+            }}
+          >
+            Question Authoring
           </Link>
         </div>
       </section>
