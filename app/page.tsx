@@ -34,7 +34,7 @@ export default function HomePage() {
           background: "#ffffff",
           borderRadius: "12px",
           padding: "24px",
-          maxWidth: "920px",
+          maxWidth: "980px",
           boxShadow: "0 1px 3px rgba(0,0,0,0.08)"
         }}
       >
@@ -48,8 +48,8 @@ export default function HomePage() {
         </h2>
 
         <p style={{ color: "#475569", lineHeight: 1.6 }}>
-          Taxonomy, disciplines, competencies, blueprints, and subtopics are in place.
-          The next active module is question authoring.
+          Taxonomy, disciplines, competencies, blueprints, subtopics, question authoring,
+          and review workflow are now active.
         </p>
 
         <div
@@ -129,6 +129,21 @@ export default function HomePage() {
             }}
           >
             Question Authoring
+          </Link>
+
+          <Link
+            href="/reviewer/queue"
+            style={{
+              backgroundColor: "#ffffff",
+              color: "#0f2d69",
+              textDecoration: "none",
+              padding: "12px 18px",
+              borderRadius: "10px",
+              fontWeight: 700,
+              border: "1px solid #cbd5e1"
+            }}
+          >
+            Review Queue
           </Link>
         </div>
       </section>
