@@ -1,7 +1,7 @@
 import Link from "next/link";
-import AdminTaxonomyClient from "@/components/admin-taxonomy-client";
+import AdminBlueprintsClient from "@/components/admin-blueprints-client";
 
-export default function TaxonomyAdminPage() {
+export default function BlueprintsAdminPage() {
   return (
     <main
       style={{
@@ -33,6 +33,7 @@ export default function TaxonomyAdminPage() {
           >
             Admin
           </p>
+
           <h1
             style={{
               margin: 0,
@@ -40,18 +41,20 @@ export default function TaxonomyAdminPage() {
               fontSize: "36px"
             }}
           >
-            Taxonomy Dashboard
+            Blueprint Dashboard
           </h1>
+
           <p
             style={{
               margin: "10px 0 0 0",
               color: "#475569",
-              maxWidth: "760px",
+              maxWidth: "820px",
               lineHeight: 1.6
             }}
           >
-            Manage the educational structure of S World. Start with exam tracks,
-            then add disciplines, competencies, and blueprint distributions.
+            Define how each discipline is weighted across competencies. These
+            blueprint percentages will later drive practice block generation and
+            balanced exam simulation.
           </p>
         </div>
 
@@ -63,45 +66,48 @@ export default function TaxonomyAdminPage() {
           }}
         >
           <Link
-            href="/admin/disciplines"
-            style={{
-              backgroundColor: "#0f2d69",
-              color: "#ffffff",
-              textDecoration: "none",
-              borderRadius: "10px",
-              padding: "12px 16px",
-              fontWeight: 700
-            }}
-          >
-            Manage Disciplines
-          </Link>
-
-          <Link
             href="/admin/competencies"
             style={{
-              backgroundColor: "#0f2d69",
-              color: "#ffffff",
+              backgroundColor: "#ffffff",
+              color: "#0f2d69",
               textDecoration: "none",
               borderRadius: "10px",
               padding: "12px 16px",
-              fontWeight: 700
+              fontWeight: 700,
+              border: "1px solid #cbd5e1"
             }}
           >
-            Manage Competencies
+            Competencies
           </Link>
 
           <Link
-            href="/admin/blueprints"
+            href="/admin/disciplines"
             style={{
-              backgroundColor: "#0f2d69",
-              color: "#ffffff",
+              backgroundColor: "#ffffff",
+              color: "#0f2d69",
               textDecoration: "none",
               borderRadius: "10px",
               padding: "12px 16px",
-              fontWeight: 700
+              fontWeight: 700,
+              border: "1px solid #cbd5e1"
             }}
           >
-            Manage Blueprints
+            Disciplines
+          </Link>
+
+          <Link
+            href="/admin/taxonomy"
+            style={{
+              backgroundColor: "#ffffff",
+              color: "#0f2d69",
+              textDecoration: "none",
+              borderRadius: "10px",
+              padding: "12px 16px",
+              fontWeight: 700,
+              border: "1px solid #cbd5e1"
+            }}
+          >
+            Exam Tracks
           </Link>
 
           <Link
@@ -121,7 +127,7 @@ export default function TaxonomyAdminPage() {
         </div>
       </div>
 
-      <AdminTaxonomyClient />
+      <AdminBlueprintsClient />
     </main>
   );
 }
