@@ -1,7 +1,7 @@
 import Link from "next/link";
-import AdminTaxonomyClient from "@/components/admin-taxonomy-client";
+import AdminDisciplinesClient from "@/components/admin-disciplines-client";
 
-export default function TaxonomyAdminPage() {
+export default function DisciplinesAdminPage() {
   return (
     <main
       style={{
@@ -40,7 +40,7 @@ export default function TaxonomyAdminPage() {
               fontSize: "36px"
             }}
           >
-            Taxonomy Dashboard
+            Disciplines Dashboard
           </h1>
           <p
             style={{
@@ -50,8 +50,8 @@ export default function TaxonomyAdminPage() {
               lineHeight: 1.6
             }}
           >
-            Manage the educational structure of S World. Start with exam tracks,
-            then add disciplines, competencies, and blueprint distributions.
+            Add and manage disciplines under each exam track. This is the second
+            layer of the S World learning taxonomy.
           </p>
         </div>
 
@@ -63,17 +63,18 @@ export default function TaxonomyAdminPage() {
           }}
         >
           <Link
-            href="/admin/disciplines"
+            href="/admin/taxonomy"
             style={{
-              backgroundColor: "#0f2d69",
-              color: "#ffffff",
+              backgroundColor: "#ffffff",
+              color: "#0f2d69",
               textDecoration: "none",
               borderRadius: "10px",
               padding: "12px 16px",
-              fontWeight: 700
+              fontWeight: 700,
+              border: "1px solid #cbd5e1"
             }}
           >
-            Manage Disciplines
+            Exam Tracks
           </Link>
 
           <Link
@@ -93,7 +94,7 @@ export default function TaxonomyAdminPage() {
         </div>
       </div>
 
-      <AdminTaxonomyClient />
+      <AdminDisciplinesClient />
     </main>
   );
 }
