@@ -3,6 +3,44 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+type SubmissionQuestion = {
+  id: string;
+  title: string | null;
+  stem: string;
+  lead_in: string | null;
+  explanation: string;
+  strategy_text: string | null;
+  resources_text: string | null;
+  info_text: string | null;
+  difficulty: "easy" | "medium" | "hard";
+  cognitive_level: "recall" | "application" | "clinical_reasoning";
+  question_type: "MCQ" | "IMAGE" | "LAB_INTERPRETATION" | "CASE_SERIES";
+  status:
+    | "draft"
+    | "submitted"
+    | "under_review"
+    | "needs_revision"
+    | "approved"
+    | "rejected"
+    | "retired";
+  exam_track_id: string | null;
+  discipline_id: string | null;
+  competency_id: string | null;
+  subtopic_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type RawSubmissionListItem = {
+  id: string;
+  question_id: string;
+  status: "draft" | "submitted" | "under_review" | "needs_revision" | "approved" | "rejected";
+  submitted_at: string;
+  reviewer_notes: string | null;
+  internal_notes: string | null;
+  questions: SubmissionQuestion[] | SubmissionQuestion | null;
+};
+
 type SubmissionListItem = {
   id: string;
   question_id: string;
@@ -10,33 +48,7 @@ type SubmissionListItem = {
   submitted_at: string;
   reviewer_notes: string | null;
   internal_notes: string | null;
-  questions: {
-    id: string;
-    title: string | null;
-    stem: string;
-    lead_in: string | null;
-    explanation: string;
-    strategy_text: string | null;
-    resources_text: string | null;
-    info_text: string | null;
-    difficulty: "easy" | "medium" | "hard";
-    cognitive_level: "recall" | "application" | "clinical_reasoning";
-    question_type: "MCQ" | "IMAGE" | "LAB_INTERPRETATION" | "CASE_SERIES";
-    status:
-      | "draft"
-      | "submitted"
-      | "under_review"
-      | "needs_revision"
-      | "approved"
-      | "rejected"
-      | "retired";
-    exam_track_id: string | null;
-    discipline_id: string | null;
-    competency_id: string | null;
-    subtopic_id: string | null;
-    created_at: string;
-    updated_at: string;
-  } | null;
+  questions: SubmissionQuestion | null;
 };
 
 type AnswerOption = {
@@ -120,7 +132,19 @@ export default function ReviewQueueClient() {
       return;
     }
 
-    const loaded = (data ?? []) as SubmissionListItem[];
+    const raw = ((data ?? []) as unknown[]) as RawSubmissionListItem[];
+
+    const loaded: SubmissionListItem[] = raw.map((submission) => {
+      const question = Array.isArray(submission.questions)
+        ? submission.questions[0] ?? null
+        : submission.questions ?? null;
+
+      return {
+        ...submission,
+        questions: question
+      };
+    });
+
     setSubmissions(loaded);
 
     if (!selectedSubmissionId && loaded.length > 0) {
