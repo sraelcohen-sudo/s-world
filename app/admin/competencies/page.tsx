@@ -1,7 +1,7 @@
 import Link from "next/link";
-import AdminTaxonomyClient from "@/components/admin-taxonomy-client";
+import AdminCompetenciesClient from "@/components/admin-competencies-client";
 
-export default function TaxonomyAdminPage() {
+export default function CompetenciesAdminPage() {
   return (
     <main
       style={{
@@ -33,6 +33,7 @@ export default function TaxonomyAdminPage() {
           >
             Admin
           </p>
+
           <h1
             style={{
               margin: 0,
@@ -40,8 +41,9 @@ export default function TaxonomyAdminPage() {
               fontSize: "36px"
             }}
           >
-            Taxonomy Dashboard
+            Competencies Dashboard
           </h1>
+
           <p
             style={{
               margin: "10px 0 0 0",
@@ -50,8 +52,8 @@ export default function TaxonomyAdminPage() {
               lineHeight: 1.6
             }}
           >
-            Manage the educational structure of S World. Start with exam tracks,
-            then add disciplines, competencies, and blueprint distributions.
+            Add and manage competencies under each discipline. These competencies
+            power mastery tracking, blueprinting, and learner analytics.
           </p>
         </div>
 
@@ -65,29 +67,31 @@ export default function TaxonomyAdminPage() {
           <Link
             href="/admin/disciplines"
             style={{
-              backgroundColor: "#0f2d69",
-              color: "#ffffff",
+              backgroundColor: "#ffffff",
+              color: "#0f2d69",
               textDecoration: "none",
               borderRadius: "10px",
               padding: "12px 16px",
-              fontWeight: 700
+              fontWeight: 700,
+              border: "1px solid #cbd5e1"
             }}
           >
-            Manage Disciplines
+            Disciplines
           </Link>
 
           <Link
-            href="/admin/competencies"
+            href="/admin/taxonomy"
             style={{
-              backgroundColor: "#0f2d69",
-              color: "#ffffff",
+              backgroundColor: "#ffffff",
+              color: "#0f2d69",
               textDecoration: "none",
               borderRadius: "10px",
               padding: "12px 16px",
-              fontWeight: 700
+              fontWeight: 700,
+              border: "1px solid #cbd5e1"
             }}
           >
-            Manage Competencies
+            Exam Tracks
           </Link>
 
           <Link
@@ -107,7 +111,7 @@ export default function TaxonomyAdminPage() {
         </div>
       </div>
 
-      <AdminTaxonomyClient />
+      <AdminCompetenciesClient />
     </main>
   );
 }

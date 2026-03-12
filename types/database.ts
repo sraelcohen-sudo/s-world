@@ -14,3 +14,14 @@ export type Discipline = {
   active: boolean;
   created_at: string;
 };
+
+export type Competency = {
+  id: string;
+  discipline_id: string;
+  name: string;
+  description: string | null;
+  threshold_percent: number;
+  minimum_questions: number;
+  active: boolean;
+  created_at: string;
+};
