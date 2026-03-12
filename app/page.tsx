@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function HomePage() {
   return (
     <main
@@ -46,9 +48,31 @@ export default function HomePage() {
         </h2>
 
         <p style={{ color: "#475569", lineHeight: 1.6 }}>
-          GitHub repository connected. Next steps: Supabase schema, authentication,
-          taxonomy engine, and Vercel deployment.
+          GitHub connected, Vercel deployed, Supabase schema loaded.
         </p>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            flexWrap: "wrap",
+            marginTop: "20px"
+          }}
+        >
+          <Link
+            href="/admin/taxonomy"
+            style={{
+              backgroundColor: "#0f2d69",
+              color: "#ffffff",
+              textDecoration: "none",
+              padding: "12px 18px",
+              borderRadius: "10px",
+              fontWeight: 700
+            }}
+          >
+            Open Taxonomy Admin
+          </Link>
+        </div>
       </section>
     </main>
   );

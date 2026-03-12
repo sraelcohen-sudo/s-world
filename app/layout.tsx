@@ -16,7 +16,8 @@ export default function RootLayout({
         style={{
           margin: 0,
           fontFamily: "Arial, sans-serif",
-          backgroundColor: "#f5f7fb"
+          backgroundColor: "#eef2f7",
+          color: "#0f172a"
         }}
       >
         {children}
