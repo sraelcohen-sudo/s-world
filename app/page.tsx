@@ -34,7 +34,7 @@ export default function HomePage() {
           background: "#ffffff",
           borderRadius: "12px",
           padding: "24px",
-          maxWidth: "1040px",
+          maxWidth: "1080px",
           boxShadow: "0 1px 3px rgba(0,0,0,0.08)"
         }}
       >
@@ -48,7 +48,7 @@ export default function HomePage() {
         </h2>
 
         <p style={{ color: "#475569", lineHeight: 1.6 }}>
-          Taxonomy, visibility controls, question authoring, review workflow, and the first learner practice engine are now active.
+          Taxonomy, visibility controls, question authoring, review workflow, learner practice, and competency progress tracking are now active.
         </p>
 
         <div
@@ -158,6 +158,21 @@ export default function HomePage() {
             }}
           >
             Practice Block
+          </Link>
+
+          <Link
+            href="/learn/progress"
+            style={{
+              backgroundColor: "#ffffff",
+              color: "#0f2d69",
+              textDecoration: "none",
+              padding: "12px 18px",
+              borderRadius: "10px",
+              fontWeight: 700,
+              border: "1px solid #cbd5e1"
+            }}
+          >
+            Competency Progress
           </Link>
         </div>
       </section>
