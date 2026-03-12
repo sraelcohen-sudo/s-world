@@ -34,7 +34,7 @@ export default function HomePage() {
           background: "#ffffff",
           borderRadius: "12px",
           padding: "24px",
-          maxWidth: "1080px",
+          maxWidth: "1120px",
           boxShadow: "0 1px 3px rgba(0,0,0,0.08)"
         }}
       >
@@ -48,7 +48,8 @@ export default function HomePage() {
         </h2>
 
         <p style={{ color: "#475569", lineHeight: 1.6 }}>
-          Taxonomy, visibility controls, question authoring, review workflow, learner practice, and competency progress tracking are now active.
+          Taxonomy, visibility controls, question authoring, review workflow, learner practice,
+          competency progress tracking, and remediation mode are now active.
         </p>
 
         <div
@@ -173,6 +174,21 @@ export default function HomePage() {
             }}
           >
             Competency Progress
+          </Link>
+
+          <Link
+            href="/learn/remediation"
+            style={{
+              backgroundColor: "#ffffff",
+              color: "#7c2d12",
+              textDecoration: "none",
+              padding: "12px 18px",
+              borderRadius: "10px",
+              fontWeight: 700,
+              border: "1px solid #fed7aa"
+            }}
+          >
+            Remediation Mode
           </Link>
         </div>
       </section>
