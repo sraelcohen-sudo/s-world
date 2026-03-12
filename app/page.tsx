@@ -34,7 +34,7 @@ export default function HomePage() {
           background: "#ffffff",
           borderRadius: "12px",
           padding: "24px",
-          maxWidth: "1120px",
+          maxWidth: "1140px",
           boxShadow: "0 1px 3px rgba(0,0,0,0.08)"
         }}
       >
@@ -48,8 +48,9 @@ export default function HomePage() {
         </h2>
 
         <p style={{ color: "#475569", lineHeight: 1.6 }}>
-          Taxonomy, visibility controls, question authoring, review workflow, tutor mode, timed mode,
-          competency progress tracking, remediation mode, and contributor rewards are now active.
+          Taxonomy, visibility controls, question authoring, review workflow, tutor mode,
+          timed mode, competency progress tracking, remediation mode, contributor rewards,
+          and admin analytics are now active.
         </p>
 
         <div
@@ -72,6 +73,20 @@ export default function HomePage() {
             }}
           >
             Taxonomy Admin
+          </Link>
+
+          <Link
+            href="/admin/analytics"
+            style={{
+              backgroundColor: "#0f2d69",
+              color: "#ffffff",
+              textDecoration: "none",
+              padding: "12px 18px",
+              borderRadius: "10px",
+              fontWeight: 700
+            }}
+          >
+            Analytics
           </Link>
 
           <Link
