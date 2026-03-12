@@ -70,7 +70,7 @@ export default function QuestionAuthorClient() {
       subtopicsResult,
       questionsResult
     ] = await Promise.all([
-      supabase.from("exam_tracks").select("*").order("name", { ascending: true }),
+      supabase.from("exam_tracks").select("*").eq("active", true).order("name", { ascending: true }),
       supabase.from("disciplines").select("*").order("name", { ascending: true }),
       supabase.from("competencies").select("*").order("name", { ascending: true }),
       supabase.from("subtopics").select("*").order("name", { ascending: true }),
@@ -123,6 +123,18 @@ export default function QuestionAuthorClient() {
       setSelectedTrackId(loadedTracks[0].id);
     }
 
+    if (
+      selectedTrackId &&
+      loadedTracks.length > 0 &&
+      !loadedTracks.some((track) => track.id === selectedTrackId)
+    ) {
+      setSelectedTrackId(loadedTracks[0].id);
+    }
+
+    if (loadedTracks.length === 0) {
+      setSelectedTrackId("");
+    }
+
     setLoading(false);
   }
 
@@ -130,9 +142,17 @@ export default function QuestionAuthorClient() {
     loadAll();
   }, []);
 
+  const visibleDisciplines = useMemo(() => {
+    const visibleTrackIds = new Set(tracks.map((track) => track.id));
+    return disciplines.filter(
+      (discipline) =>
+        discipline.exam_track_id !== null && visibleTrackIds.has(discipline.exam_track_id)
+    );
+  }, [disciplines, tracks]);
+
   const filteredDisciplines = useMemo(() => {
-    return disciplines.filter((d) => d.exam_track_id === selectedTrackId);
-  }, [disciplines, selectedTrackId]);
+    return visibleDisciplines.filter((d) => d.exam_track_id === selectedTrackId);
+  }, [visibleDisciplines, selectedTrackId]);
 
   useEffect(() => {
     if (filteredDisciplines.length === 0) {
@@ -146,9 +166,17 @@ export default function QuestionAuthorClient() {
     }
   }, [filteredDisciplines, selectedDisciplineId]);
 
+  const visibleDisciplineIds = useMemo(() => {
+    return new Set(visibleDisciplines.map((discipline) => discipline.id));
+  }, [visibleDisciplines]);
+
+  const visibleCompetencies = useMemo(() => {
+    return competencies.filter((c) => visibleDisciplineIds.has(c.discipline_id));
+  }, [competencies, visibleDisciplineIds]);
+
   const filteredCompetencies = useMemo(() => {
-    return competencies.filter((c) => c.discipline_id === selectedDisciplineId);
-  }, [competencies, selectedDisciplineId]);
+    return visibleCompetencies.filter((c) => c.discipline_id === selectedDisciplineId);
+  }, [visibleCompetencies, selectedDisciplineId]);
 
   useEffect(() => {
     if (filteredCompetencies.length === 0) {
@@ -198,7 +226,7 @@ export default function QuestionAuthorClient() {
     setAuthorReference("");
     setEstimatedTimeSeconds("90");
     setCorrectOption("A");
-    setOptions(defaultOptions);
+    setOptions(defaultOptions.map((option) => ({ ...option })));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -343,11 +371,15 @@ export default function QuestionAuthorClient() {
             onChange={(e) => setSelectedTrackId(e.target.value)}
             style={inputStyle}
           >
-            {tracks.map((track) => (
-              <option key={track.id} value={track.id}>
-                {track.name}
-              </option>
-            ))}
+            {tracks.length === 0 ? (
+              <option value="">No visible exam tracks available</option>
+            ) : (
+              tracks.map((track) => (
+                <option key={track.id} value={track.id}>
+                  {track.name}
+                </option>
+              ))
+            )}
           </select>
 
           <label style={labelStyle}>Discipline</label>
@@ -356,11 +388,15 @@ export default function QuestionAuthorClient() {
             onChange={(e) => setSelectedDisciplineId(e.target.value)}
             style={inputStyle}
           >
-            {filteredDisciplines.map((discipline) => (
-              <option key={discipline.id} value={discipline.id}>
-                {discipline.name}
-              </option>
-            ))}
+            {filteredDisciplines.length === 0 ? (
+              <option value="">No disciplines available</option>
+            ) : (
+              filteredDisciplines.map((discipline) => (
+                <option key={discipline.id} value={discipline.id}>
+                  {discipline.name}
+                </option>
+              ))
+            )}
           </select>
 
           <label style={labelStyle}>Competency</label>
@@ -369,11 +405,15 @@ export default function QuestionAuthorClient() {
             onChange={(e) => setSelectedCompetencyId(e.target.value)}
             style={inputStyle}
           >
-            {filteredCompetencies.map((competency) => (
-              <option key={competency.id} value={competency.id}>
-                {competency.name}
-              </option>
-            ))}
+            {filteredCompetencies.length === 0 ? (
+              <option value="">No competencies available</option>
+            ) : (
+              filteredCompetencies.map((competency) => (
+                <option key={competency.id} value={competency.id}>
+                  {competency.name}
+                </option>
+              ))
+            )}
           </select>
 
           <label style={labelStyle}>Subtopic</label>
@@ -557,15 +597,15 @@ export default function QuestionAuthorClient() {
 
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || tracks.length === 0}
             style={{
-              backgroundColor: saving ? "#94a3b8" : "#0f2d69",
+              backgroundColor: saving || tracks.length === 0 ? "#94a3b8" : "#0f2d69",
               color: "#ffffff",
               border: "none",
               borderRadius: "10px",
               padding: "12px 18px",
               fontWeight: 700,
-              cursor: saving ? "not-allowed" : "pointer"
+              cursor: saving || tracks.length === 0 ? "not-allowed" : "pointer"
             }}
           >
             {saving ? "Submitting..." : "Submit Question"}

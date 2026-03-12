@@ -50,7 +50,8 @@ export default function AdminTaxonomyClient() {
 
     const { error } = await supabase.from("exam_tracks").insert({
       name: cleanName,
-      description: cleanDescription || null
+      description: cleanDescription || null,
+      active: true
     });
 
     if (error) {
@@ -66,9 +67,30 @@ export default function AdminTaxonomyClient() {
     setSaving(false);
   }
 
+  async function handleToggleTrackVisibility(trackId: string, nextActiveValue: boolean) {
+    setMessage("");
+    setError("");
+
+    const { error } = await supabase
+      .from("exam_tracks")
+      .update({ active: nextActiveValue })
+      .eq("id", trackId);
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    setMessage(nextActiveValue ? "Exam track is now visible." : "Exam track is now hidden.");
+    await loadTracks();
+  }
+
   useEffect(() => {
     loadTracks();
   }, []);
+
+  const activeCount = tracks.filter((track) => track.active).length;
+  const hiddenCount = tracks.filter((track) => !track.active).length;
 
   return (
     <div
@@ -165,6 +187,41 @@ export default function AdminTaxonomyClient() {
           </button>
         </form>
 
+        <div
+          style={{
+            marginTop: "20px",
+            display: "flex",
+            gap: "10px",
+            flexWrap: "wrap"
+          }}
+        >
+          <span
+            style={{
+              backgroundColor: "#dcfce7",
+              color: "#166534",
+              borderRadius: "999px",
+              padding: "8px 12px",
+              fontSize: "12px",
+              fontWeight: 700
+            }}
+          >
+            Visible: {activeCount}
+          </span>
+
+          <span
+            style={{
+              backgroundColor: "#f1f5f9",
+              color: "#475569",
+              borderRadius: "999px",
+              padding: "8px 12px",
+              fontSize: "12px",
+              fontWeight: 700
+            }}
+          >
+            Hidden: {hiddenCount}
+          </span>
+        </div>
+
         {message ? (
           <p
             style={{
@@ -208,14 +265,26 @@ export default function AdminTaxonomyClient() {
             flexWrap: "wrap"
           }}
         >
-          <h2
-            style={{
-              margin: 0,
-              color: "#0f2d69"
-            }}
-          >
-            Existing Exam Tracks
-          </h2>
+          <div>
+            <h2
+              style={{
+                margin: 0,
+                color: "#0f2d69"
+              }}
+            >
+              Existing Exam Tracks
+            </h2>
+
+            <p
+              style={{
+                margin: "8px 0 0 0",
+                color: "#475569"
+              }}
+            >
+              Hidden exam tracks will disappear from the discipline, competency,
+              blueprint, and authoring screens.
+            </p>
+          </div>
 
           <button
             onClick={loadTracks}
@@ -250,7 +319,8 @@ export default function AdminTaxonomyClient() {
                 style={{
                   border: "1px solid #e2e8f0",
                   borderRadius: "12px",
-                  padding: "16px"
+                  padding: "16px",
+                  opacity: track.active ? 1 : 0.72
                 }}
               >
                 <div
@@ -258,10 +328,11 @@ export default function AdminTaxonomyClient() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "start",
-                    gap: "12px"
+                    gap: "12px",
+                    flexWrap: "wrap"
                   }}
                 >
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <h3
                       style={{
                         margin: "0 0 8px 0",
@@ -282,19 +353,46 @@ export default function AdminTaxonomyClient() {
                     </p>
                   </div>
 
-                  <span
+                  <div
                     style={{
-                      backgroundColor: track.active ? "#dcfce7" : "#e2e8f0",
-                      color: track.active ? "#166534" : "#475569",
-                      borderRadius: "999px",
-                      padding: "6px 10px",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      whiteSpace: "nowrap"
+                      display: "flex",
+                      gap: "10px",
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      justifyContent: "flex-end"
                     }}
                   >
-                    {track.active ? "Active" : "Inactive"}
-                  </span>
+                    <span
+                      style={{
+                        backgroundColor: track.active ? "#dcfce7" : "#f1f5f9",
+                        color: track.active ? "#166534" : "#475569",
+                        borderRadius: "999px",
+                        padding: "6px 10px",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      {track.active ? "Visible" : "Hidden"}
+                    </span>
+
+                    <button
+                      onClick={() =>
+                        handleToggleTrackVisibility(track.id, !track.active)
+                      }
+                      style={{
+                        backgroundColor: track.active ? "#fee2e2" : "#dcfce7",
+                        color: track.active ? "#b91c1c" : "#166534",
+                        border: "none",
+                        borderRadius: "10px",
+                        padding: "10px 12px",
+                        fontWeight: 700,
+                        cursor: "pointer"
+                      }}
+                    >
+                      {track.active ? "Hide" : "Show"}
+                    </button>
+                  </div>
                 </div>
               </article>
             ))}

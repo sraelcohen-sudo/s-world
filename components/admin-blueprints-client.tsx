@@ -30,7 +30,7 @@ export default function AdminBlueprintsClient() {
       competenciesResult,
       blueprintsResult
     ] = await Promise.all([
-      supabase.from("exam_tracks").select("*").order("name", { ascending: true }),
+      supabase.from("exam_tracks").select("*").eq("active", true).order("name", { ascending: true }),
       supabase.from("disciplines").select("*").order("name", { ascending: true }),
       supabase.from("competencies").select("*").order("name", { ascending: true }),
       supabase.from("blueprints").select("*").order("created_at", { ascending: true })
@@ -74,6 +74,18 @@ export default function AdminBlueprintsClient() {
       setSelectedTrackId(loadedTracks[0].id);
     }
 
+    if (
+      selectedTrackId &&
+      loadedTracks.length > 0 &&
+      !loadedTracks.some((track) => track.id === selectedTrackId)
+    ) {
+      setSelectedTrackId(loadedTracks[0].id);
+    }
+
+    if (loadedTracks.length === 0) {
+      setSelectedTrackId("");
+    }
+
     setLoading(false);
   }
 
@@ -81,10 +93,18 @@ export default function AdminBlueprintsClient() {
     loadAll();
   }, []);
 
+  const visibleDisciplines = useMemo(() => {
+    const visibleTrackIds = new Set(tracks.map((track) => track.id));
+    return disciplines.filter(
+      (discipline) =>
+        discipline.exam_track_id !== null && visibleTrackIds.has(discipline.exam_track_id)
+    );
+  }, [disciplines, tracks]);
+
   const filteredDisciplines = useMemo(() => {
     if (!selectedTrackId) return [];
-    return disciplines.filter((discipline) => discipline.exam_track_id === selectedTrackId);
-  }, [disciplines, selectedTrackId]);
+    return visibleDisciplines.filter((discipline) => discipline.exam_track_id === selectedTrackId);
+  }, [visibleDisciplines, selectedTrackId]);
 
   useEffect(() => {
     if (filteredDisciplines.length === 0) {
@@ -101,12 +121,20 @@ export default function AdminBlueprintsClient() {
     }
   }, [filteredDisciplines, selectedDisciplineId]);
 
+  const visibleDisciplineIds = useMemo(() => {
+    return new Set(visibleDisciplines.map((discipline) => discipline.id));
+  }, [visibleDisciplines]);
+
+  const visibleCompetencies = useMemo(() => {
+    return competencies.filter((competency) => visibleDisciplineIds.has(competency.discipline_id));
+  }, [competencies, visibleDisciplineIds]);
+
   const filteredCompetencies = useMemo(() => {
     if (!selectedDisciplineId) return [];
-    return competencies.filter(
+    return visibleCompetencies.filter(
       (competency) => competency.discipline_id === selectedDisciplineId
     );
-  }, [competencies, selectedDisciplineId]);
+  }, [visibleCompetencies, selectedDisciplineId]);
 
   useEffect(() => {
     if (filteredCompetencies.length === 0) {
@@ -125,15 +153,15 @@ export default function AdminBlueprintsClient() {
 
   const disciplineNameById = useMemo(() => {
     const map = new Map<string, string>();
-    disciplines.forEach((discipline) => map.set(discipline.id, discipline.name));
+    visibleDisciplines.forEach((discipline) => map.set(discipline.id, discipline.name));
     return map;
-  }, [disciplines]);
+  }, [visibleDisciplines]);
 
   const competencyNameById = useMemo(() => {
     const map = new Map<string, string>();
-    competencies.forEach((competency) => map.set(competency.id, competency.name));
+    visibleCompetencies.forEach((competency) => map.set(competency.id, competency.name));
     return map;
-  }, [competencies]);
+  }, [visibleCompetencies]);
 
   const trackNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -293,7 +321,7 @@ export default function AdminBlueprintsClient() {
             }}
           >
             {tracks.length === 0 ? (
-              <option value="">No exam tracks available</option>
+              <option value="">No visible exam tracks available</option>
             ) : (
               tracks.map((track) => (
                 <option key={track.id} value={track.id}>
@@ -329,7 +357,7 @@ export default function AdminBlueprintsClient() {
             }}
           >
             {filteredDisciplines.length === 0 ? (
-              <option value="">No disciplines available for this track</option>
+              <option value="">No disciplines available for this visible track</option>
             ) : (
               filteredDisciplines.map((discipline) => (
                 <option key={discipline.id} value={discipline.id}>
@@ -503,7 +531,7 @@ export default function AdminBlueprintsClient() {
                 ? `${trackNameById.get(selectedTrackId) || "Track"} → ${
                     disciplineNameById.get(selectedDisciplineId) || "Discipline"
                   }`
-                : "Select a track and discipline to view blueprint entries."}
+                : "Select a visible track and discipline to view blueprint entries."}
             </p>
           </div>
 

@@ -2,78 +2,122 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Discipline } from "@/types/database";
-
-type Competency = {
-  id: string;
-  discipline_id: string;
-  name: string;
-  description: string | null;
-  threshold_percent: number;
-  minimum_questions: number;
-  active: boolean;
-  created_at: string;
-};
+import type { Competency, Discipline, ExamTrack } from "@/types/database";
 
 export default function AdminCompetenciesClient() {
+  const [tracks, setTracks] = useState<ExamTrack[]>([]);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [competencies, setCompetencies] = useState<Competency[]>([]);
+  const [selectedTrackId, setSelectedTrackId] = useState("");
   const [selectedDisciplineId, setSelectedDisciplineId] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [thresholdPercent, setThresholdPercent] = useState("70");
   const [minimumQuestions, setMinimumQuestions] = useState("10");
-  const [loadingDisciplines, setLoadingDisciplines] = useState(true);
-  const [loadingCompetencies, setLoadingCompetencies] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  async function loadDisciplines() {
-    setLoadingDisciplines(true);
+  async function loadAll() {
+    setLoading(true);
     setError("");
 
-    const { data, error } = await supabase
-      .from("disciplines")
-      .select("*")
-      .order("name", { ascending: true });
+    const [tracksResult, disciplinesResult, competenciesResult] = await Promise.all([
+      supabase.from("exam_tracks").select("*").eq("active", true).order("name", { ascending: true }),
+      supabase.from("disciplines").select("*").order("name", { ascending: true }),
+      supabase.from("competencies").select("*").order("created_at", { ascending: true })
+    ]);
 
-    if (error) {
-      setError(error.message);
-      setDisciplines([]);
-      setLoadingDisciplines(false);
+    if (tracksResult.error) {
+      setError(tracksResult.error.message);
+      setLoading(false);
       return;
     }
 
-    const loadedDisciplines = (data ?? []) as Discipline[];
+    if (disciplinesResult.error) {
+      setError(disciplinesResult.error.message);
+      setLoading(false);
+      return;
+    }
+
+    if (competenciesResult.error) {
+      setError(competenciesResult.error.message);
+      setLoading(false);
+      return;
+    }
+
+    const loadedTracks = (tracksResult.data ?? []) as ExamTrack[];
+    const loadedDisciplines = (disciplinesResult.data ?? []) as Discipline[];
+    const loadedCompetencies = (competenciesResult.data ?? []) as Competency[];
+
+    setTracks(loadedTracks);
     setDisciplines(loadedDisciplines);
+    setCompetencies(loadedCompetencies);
 
-    if (!selectedDisciplineId && loadedDisciplines.length > 0) {
-      setSelectedDisciplineId(loadedDisciplines[0].id);
+    if (!selectedTrackId && loadedTracks.length > 0) {
+      setSelectedTrackId(loadedTracks[0].id);
     }
 
-    setLoadingDisciplines(false);
+    if (
+      selectedTrackId &&
+      loadedTracks.length > 0 &&
+      !loadedTracks.some((track) => track.id === selectedTrackId)
+    ) {
+      setSelectedTrackId(loadedTracks[0].id);
+    }
+
+    if (loadedTracks.length === 0) {
+      setSelectedTrackId("");
+    }
+
+    setLoading(false);
   }
 
-  async function loadCompetencies() {
-    setLoadingCompetencies(true);
-    setError("");
+  useEffect(() => {
+    loadAll();
+  }, []);
 
-    const { data, error } = await supabase
-      .from("competencies")
-      .select("*")
-      .order("created_at", { ascending: true });
+  const visibleDisciplines = useMemo(() => {
+    const visibleTrackIds = new Set(tracks.map((track) => track.id));
+    return disciplines.filter(
+      (discipline) =>
+        discipline.exam_track_id !== null && visibleTrackIds.has(discipline.exam_track_id)
+    );
+  }, [disciplines, tracks]);
 
-    if (error) {
-      setError(error.message);
-      setCompetencies([]);
-      setLoadingCompetencies(false);
+  const filteredDisciplines = useMemo(() => {
+    return visibleDisciplines.filter((discipline) => discipline.exam_track_id === selectedTrackId);
+  }, [visibleDisciplines, selectedTrackId]);
+
+  useEffect(() => {
+    if (filteredDisciplines.length === 0) {
+      setSelectedDisciplineId("");
       return;
     }
 
-    setCompetencies((data ?? []) as Competency[]);
-    setLoadingCompetencies(false);
-  }
+    const stillExists = filteredDisciplines.some(
+      (discipline) => discipline.id === selectedDisciplineId
+    );
+
+    if (!stillExists) {
+      setSelectedDisciplineId(filteredDisciplines[0].id);
+    }
+  }, [filteredDisciplines, selectedDisciplineId]);
+
+  const visibleDisciplineIds = useMemo(() => {
+    return new Set(visibleDisciplines.map((discipline) => discipline.id));
+  }, [visibleDisciplines]);
+
+  const visibleCompetencies = useMemo(() => {
+    return competencies.filter((competency) => visibleDisciplineIds.has(competency.discipline_id));
+  }, [competencies, visibleDisciplineIds]);
+
+  const disciplineNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    visibleDisciplines.forEach((discipline) => map.set(discipline.id, discipline.name));
+    return map;
+  }, [visibleDisciplines]);
 
   async function handleAddCompetency(e: React.FormEvent) {
     e.preventDefault();
@@ -133,20 +177,9 @@ export default function AdminCompetenciesClient() {
     setThresholdPercent("70");
     setMinimumQuestions("10");
     setMessage("Competency added successfully.");
-    await loadCompetencies();
+    await loadAll();
     setSaving(false);
   }
-
-  useEffect(() => {
-    loadDisciplines();
-    loadCompetencies();
-  }, []);
-
-  const disciplineNameById = useMemo(() => {
-    const map = new Map<string, string>();
-    disciplines.forEach((discipline) => map.set(discipline.id, discipline.name));
-    return map;
-  }, [disciplines]);
 
   return (
     <div
@@ -184,13 +217,13 @@ export default function AdminCompetenciesClient() {
               marginBottom: "8px"
             }}
           >
-            Discipline
+            Exam Track
           </label>
 
           <select
-            value={selectedDisciplineId}
-            onChange={(e) => setSelectedDisciplineId(e.target.value)}
-            disabled={loadingDisciplines || disciplines.length === 0}
+            value={selectedTrackId}
+            onChange={(e) => setSelectedTrackId(e.target.value)}
+            disabled={loading || tracks.length === 0}
             style={{
               width: "100%",
               padding: "12px",
@@ -201,10 +234,46 @@ export default function AdminCompetenciesClient() {
               backgroundColor: "#fff"
             }}
           >
-            {disciplines.length === 0 ? (
-              <option value="">No disciplines available</option>
+            {tracks.length === 0 ? (
+              <option value="">No visible exam tracks available</option>
             ) : (
-              disciplines.map((discipline) => (
+              tracks.map((track) => (
+                <option key={track.id} value={track.id}>
+                  {track.name}
+                </option>
+              ))
+            )}
+          </select>
+
+          <label
+            style={{
+              display: "block",
+              fontSize: "14px",
+              fontWeight: 700,
+              marginBottom: "8px"
+            }}
+          >
+            Discipline
+          </label>
+
+          <select
+            value={selectedDisciplineId}
+            onChange={(e) => setSelectedDisciplineId(e.target.value)}
+            disabled={filteredDisciplines.length === 0}
+            style={{
+              width: "100%",
+              padding: "12px",
+              borderRadius: "10px",
+              border: "1px solid #cbd5e1",
+              boxSizing: "border-box",
+              marginBottom: "16px",
+              backgroundColor: "#fff"
+            }}
+          >
+            {filteredDisciplines.length === 0 ? (
+              <option value="">No disciplines available for this visible track</option>
+            ) : (
+              filteredDisciplines.map((discipline) => (
                 <option key={discipline.id} value={discipline.id}>
                   {discipline.name}
                 </option>
@@ -321,15 +390,15 @@ export default function AdminCompetenciesClient() {
 
           <button
             type="submit"
-            disabled={saving || disciplines.length === 0}
+            disabled={saving || filteredDisciplines.length === 0}
             style={{
-              backgroundColor: saving || disciplines.length === 0 ? "#94a3b8" : "#0f2d69",
+              backgroundColor: saving || filteredDisciplines.length === 0 ? "#94a3b8" : "#0f2d69",
               color: "#ffffff",
               border: "none",
               borderRadius: "10px",
               padding: "12px 18px",
               fontWeight: 700,
-              cursor: saving || disciplines.length === 0 ? "not-allowed" : "pointer"
+              cursor: saving || filteredDisciplines.length === 0 ? "not-allowed" : "pointer"
             }}
           >
             {saving ? "Saving..." : "Add Competency"}
@@ -389,7 +458,7 @@ export default function AdminCompetenciesClient() {
           </h2>
 
           <button
-            onClick={loadCompetencies}
+            onClick={loadAll}
             style={{
               backgroundColor: "#e2e8f0",
               color: "#0f172a",
@@ -404,10 +473,10 @@ export default function AdminCompetenciesClient() {
           </button>
         </div>
 
-        {loadingCompetencies ? (
+        {loading ? (
           <p style={{ color: "#475569" }}>Loading competencies...</p>
-        ) : competencies.length === 0 ? (
-          <p style={{ color: "#475569" }}>No competencies found.</p>
+        ) : visibleCompetencies.length === 0 ? (
+          <p style={{ color: "#475569" }}>No competencies found for visible exam tracks.</p>
         ) : (
           <div
             style={{
@@ -415,7 +484,7 @@ export default function AdminCompetenciesClient() {
               gap: "14px"
             }}
           >
-            {competencies.map((competency) => (
+            {visibleCompetencies.map((competency) => (
               <article
                 key={competency.id}
                 style={{

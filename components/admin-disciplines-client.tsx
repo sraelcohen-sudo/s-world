@@ -2,16 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { ExamTrack } from "@/types/database";
-
-type Discipline = {
-  id: string;
-  exam_track_id: string | null;
-  name: string;
-  description: string | null;
-  active: boolean;
-  created_at: string;
-};
+import type { Discipline, ExamTrack } from "@/types/database";
 
 export default function AdminDisciplinesClient() {
   const [tracks, setTracks] = useState<ExamTrack[]>([]);
@@ -31,6 +22,7 @@ export default function AdminDisciplinesClient() {
     const { data, error } = await supabase
       .from("exam_tracks")
       .select("*")
+      .eq("active", true)
       .order("name", { ascending: true });
 
     if (error) {
@@ -45,6 +37,18 @@ export default function AdminDisciplinesClient() {
 
     if (!selectedTrackId && loadedTracks.length > 0) {
       setSelectedTrackId(loadedTracks[0].id);
+    }
+
+    if (
+      selectedTrackId &&
+      loadedTracks.length > 0 &&
+      !loadedTracks.some((track) => track.id === selectedTrackId)
+    ) {
+      setSelectedTrackId(loadedTracks[0].id);
+    }
+
+    if (loadedTracks.length === 0) {
+      setSelectedTrackId("");
     }
 
     setLoadingTracks(false);
@@ -120,6 +124,14 @@ export default function AdminDisciplinesClient() {
     return map;
   }, [tracks]);
 
+  const visibleDisciplines = useMemo(() => {
+    const visibleTrackIds = new Set(tracks.map((track) => track.id));
+    return disciplines.filter(
+      (discipline) =>
+        discipline.exam_track_id !== null && visibleTrackIds.has(discipline.exam_track_id)
+    );
+  }, [disciplines, tracks]);
+
   return (
     <div
       style={{
@@ -174,7 +186,7 @@ export default function AdminDisciplinesClient() {
             }}
           >
             {tracks.length === 0 ? (
-              <option value="">No exam tracks available</option>
+              <option value="">No visible exam tracks available</option>
             ) : (
               tracks.map((track) => (
                 <option key={track.id} value={track.id}>
@@ -304,7 +316,10 @@ export default function AdminDisciplinesClient() {
           </h2>
 
           <button
-            onClick={loadDisciplines}
+            onClick={() => {
+              loadTracks();
+              loadDisciplines();
+            }}
             style={{
               backgroundColor: "#e2e8f0",
               color: "#0f172a",
@@ -321,8 +336,8 @@ export default function AdminDisciplinesClient() {
 
         {loadingDisciplines ? (
           <p style={{ color: "#475569" }}>Loading disciplines...</p>
-        ) : disciplines.length === 0 ? (
-          <p style={{ color: "#475569" }}>No disciplines found.</p>
+        ) : visibleDisciplines.length === 0 ? (
+          <p style={{ color: "#475569" }}>No disciplines found for visible exam tracks.</p>
         ) : (
           <div
             style={{
@@ -330,7 +345,7 @@ export default function AdminDisciplinesClient() {
               gap: "14px"
             }}
           >
-            {disciplines.map((discipline) => (
+            {visibleDisciplines.map((discipline) => (
               <article
                 key={discipline.id}
                 style={{
