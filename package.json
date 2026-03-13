@@ -8,12 +8,11 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@supabase/ssr": "latest",
-    "@supabase/supabase-js": "latest",
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest"
-  },
+  "next": "16.1.6",
+  "react": "^19.0.0",
+  "react-dom": "^19.0.0",
+  "pg": "^8.11.5"
+},
   "devDependencies": {
     "@types/node": "latest",
     "@types/react": "latest",
