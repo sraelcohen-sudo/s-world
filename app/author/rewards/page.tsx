@@ -1,7 +1,7 @@
 import Link from "next/link";
-import ContributorRewardsClient from "@/components/contributor-rewards-client";
+import AuthorRewardsDashboard from "@/components/contributor-rewards-client";
 
-export default function AuthorRewardsPage() {
+export default function AuthorRewardsDashboardPage() {
   return (
     <main
       style={{
@@ -33,6 +33,7 @@ export default function AuthorRewardsPage() {
           >
             Author Portal
           </p>
+
           <h1
             style={{
               margin: 0,
@@ -42,6 +43,7 @@ export default function AuthorRewardsPage() {
           >
             Contributor Rewards
           </h1>
+
           <p
             style={{
               margin: "10px 0 0 0",
@@ -50,7 +52,8 @@ export default function AuthorRewardsPage() {
               lineHeight: 1.6
             }}
           >
-            Check whether a contributor has earned the free month reward from approved questions.
+            Check whether a contributor has earned the free month reward
+            from approved questions.
           </p>
         </div>
 
@@ -87,7 +90,7 @@ export default function AuthorRewardsPage() {
         </div>
       </div>
 
-      <ContributorRewardsClient />
+      <AuthorRewardsDashboard />
     </main>
   );
 }
