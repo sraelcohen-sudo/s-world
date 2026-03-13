@@ -2,11 +2,24 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Competency, Discipline, ExamTrack, Question } from "@/types/database";
+import type {
+  Competency,
+  Discipline,
+  ExamTrack,
+  Question
+} from "@/types/database";
+
+type SubmissionStatus =
+  | "draft"
+  | "submitted"
+  | "under_review"
+  | "needs_revision"
+  | "approved"
+  | "rejected";
 
 type Submission = {
   id: string;
-  status: "draft" | "submitted" | "under_review" | "needs_revision" | "approved" | "rejected";
+  status: SubmissionStatus;
   author_name: string | null;
   author_email: string | null;
   approved_at: string | null;
@@ -32,13 +45,15 @@ type NormalizedSessionQuestion = {
   question: QuestionJoin | null;
 };
 
-export default function AdminAnalyticsClient() {
+export default function AdminAnalyticsDashboard() {
   const [tracks, setTracks] = useState<ExamTrack[]>([]);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [competencies, setCompetencies] = useState<Competency[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [sessionQuestions, setSessionQuestions] = useState<NormalizedSessionQuestion[]>([]);
+  const [sessionQuestions, setSessionQuestions] = useState<
+    NormalizedSessionQuestion[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -115,17 +130,21 @@ export default function AdminAnalyticsClient() {
       return;
     }
 
-    const rawSessionQuestions = ((sessionQuestionsResult.data ?? []) as unknown[]) as RawSessionQuestion[];
+    const rawSessionQuestions = (sessionQuestionsResult.data ??
+      []) as RawSessionQuestion[];
 
-    const normalizedSessionQuestions: NormalizedSessionQuestion[] = rawSessionQuestions.map((row) => {
-      const question = Array.isArray(row.questions) ? row.questions[0] ?? null : row.questions ?? null;
+    const normalizedSessionQuestions: NormalizedSessionQuestion[] =
+      rawSessionQuestions.map((row) => {
+        const question = Array.isArray(row.questions)
+          ? row.questions[0] ?? null
+          : row.questions ?? null;
 
-      return {
-        id: row.id,
-        is_correct: row.is_correct,
-        question
-      };
-    });
+        return {
+          id: row.id,
+          is_correct: row.is_correct,
+          question
+        };
+      });
 
     setTracks((tracksResult.data ?? []) as ExamTrack[]);
     setDisciplines((disciplinesResult.data ?? []) as Discipline[]);
@@ -144,7 +163,9 @@ export default function AdminAnalyticsClient() {
     const total = questions.length;
     const submitted = questions.filter((q) => q.status === "submitted").length;
     const underReview = questions.filter((q) => q.status === "under_review").length;
-    const needsRevision = questions.filter((q) => q.status === "needs_revision").length;
+    const needsRevision = questions.filter(
+      (q) => q.status === "needs_revision"
+    ).length;
     const approved = questions.filter((q) => q.status === "approved").length;
     const rejected = questions.filter((q) => q.status === "rejected").length;
 
@@ -163,7 +184,8 @@ export default function AdminAnalyticsClient() {
       .map((competency) => {
         const approvedCount = questions.filter(
           (question) =>
-            question.status === "approved" && question.competency_id === competency.id
+            question.status === "approved" &&
+            question.competency_id === competency.id
         ).length;
 
         return {
@@ -178,9 +200,11 @@ export default function AdminAnalyticsClient() {
   }, [competencies, questions]);
 
   const contributorApprovals = useMemo(() => {
-    const approvedOnly = submissions.filter((submission) => submission.status === "approved");
+    const approvedOnly = submissions.filter(
+      (submission) => submission.status === "approved"
+    );
 
-    const map = new Map<
+    const approvalMap = new Map<
       string,
       {
         name: string;
@@ -193,12 +217,12 @@ export default function AdminAnalyticsClient() {
       const email = submission.author_email?.trim().toLowerCase() || "unknown";
       const name = submission.author_name?.trim() || "Unknown contributor";
 
-      const current = map.get(email);
+      const current = approvalMap.get(email);
 
       if (current) {
         current.approvedCount += 1;
       } else {
-        map.set(email, {
+        approvalMap.set(email, {
           name,
           email,
           approvedCount: 1
@@ -206,7 +230,9 @@ export default function AdminAnalyticsClient() {
       }
     });
 
-    return Array.from(map.values()).sort((a, b) => b.approvedCount - a.approvedCount);
+    return Array.from(approvalMap.values()).sort(
+      (a, b) => b.approvedCount - a.approvedCount
+    );
   }, [submissions]);
 
   const learnerPerformanceByCompetency = useMemo(() => {
@@ -217,8 +243,11 @@ export default function AdminAnalyticsClient() {
         );
 
         const attempted = relatedAnswers.length;
-        const correct = relatedAnswers.filter((row) => row.is_correct === true).length;
-        const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
+        const correct = relatedAnswers.filter(
+          (row) => row.is_correct === true
+        ).length;
+        const accuracy =
+          attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
 
         return {
           competencyName: competency.name,
@@ -231,9 +260,15 @@ export default function AdminAnalyticsClient() {
       .sort((a, b) => a.accuracy - b.accuracy);
   }, [competencies, sessionQuestions]);
 
-  const activeTracks = useMemo(() => tracks.filter((track) => track.active).length, [tracks]);
+  const activeTracks = useMemo(
+    () => tracks.filter((track) => track.active).length,
+    [tracks]
+  );
 
-  const hiddenTracks = useMemo(() => tracks.filter((track) => !track.active).length, [tracks]);
+  const hiddenTracks = useMemo(
+    () => tracks.filter((track) => !track.active).length,
+    [tracks]
+  );
 
   if (loading) {
     return (
@@ -292,7 +327,10 @@ export default function AdminAnalyticsClient() {
           boxShadow: "0 1px 3px rgba(0,0,0,0.08)"
         }}
       >
-        <SectionHeader title="Approved Questions by Competency" onRefresh={loadAll} />
+        <SectionHeader
+          title="Approved Questions by Competency"
+          onRefresh={loadAll}
+        />
 
         {competencyCoverage.length === 0 ? (
           <p style={{ color: "#475569" }}>No competency data available.</p>
@@ -307,7 +345,13 @@ export default function AdminAnalyticsClient() {
                   padding: "14px"
                 }}
               >
-                <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", color: "#0f172a" }}>
+                <h3
+                  style={{
+                    margin: "0 0 8px 0",
+                    fontSize: "18px",
+                    color: "#0f172a"
+                  }}
+                >
                   {row.competencyName}
                 </h3>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
@@ -344,10 +388,18 @@ export default function AdminAnalyticsClient() {
                   padding: "14px"
                 }}
               >
-                <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", color: "#0f172a" }}>
+                <h3
+                  style={{
+                    margin: "0 0 8px 0",
+                    fontSize: "18px",
+                    color: "#0f172a"
+                  }}
+                >
                   {row.name}
                 </h3>
-                <p style={{ margin: "0 0 8px 0", color: "#475569" }}>{row.email}</p>
+                <p style={{ margin: "0 0 8px 0", color: "#475569" }}>
+                  {row.email}
+                </p>
                 <Pill text={`Approved Questions: ${row.approvedCount}`} />
               </article>
             ))}
@@ -363,7 +415,10 @@ export default function AdminAnalyticsClient() {
           boxShadow: "0 1px 3px rgba(0,0,0,0.08)"
         }}
       >
-        <SectionHeader title="Learner Performance by Competency" onRefresh={loadAll} />
+        <SectionHeader
+          title="Learner Performance by Competency"
+          onRefresh={loadAll}
+        />
 
         {learnerPerformanceByCompetency.length === 0 ? (
           <p style={{ color: "#475569" }}>No learner performance data yet.</p>
@@ -378,7 +433,13 @@ export default function AdminAnalyticsClient() {
                   padding: "14px"
                 }}
               >
-                <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", color: "#0f172a" }}>
+                <h3
+                  style={{
+                    margin: "0 0 8px 0",
+                    fontSize: "18px",
+                    color: "#0f172a"
+                  }}
+                >
                   {row.competencyName}
                 </h3>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
@@ -395,7 +456,13 @@ export default function AdminAnalyticsClient() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({
+  label,
+  value
+}: {
+  label: string;
+  value: number;
+}) {
   return (
     <article
       style={{
@@ -443,7 +510,9 @@ function SectionHeader({
       <h2 style={{ margin: 0, color: "#0f2d69" }}>{title}</h2>
 
       <button
-        onClick={onRefresh}
+        onClick={() => {
+          void onRefresh();
+        }}
         style={{
           backgroundColor: "#e2e8f0",
           color: "#0f172a",
