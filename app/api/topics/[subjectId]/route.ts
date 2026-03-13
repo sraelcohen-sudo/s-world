@@ -1,23 +1,25 @@
-import { NextResponse } from "next/server"
-import { Pool } from "pg"
+import { NextRequest, NextResponse } from "next/server";
+import { Pool } from "pg";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-})
+});
 
 export async function GET(
-  request: Request,
-  { params }: { params: { subjectId: string } }
+  request: NextRequest,
+  context: { params: Promise<{ subjectId: string }> }
 ) {
+  const { subjectId } = await context.params;
+
   const { rows } = await pool.query(
     `
-    SELECT id, name
+    SELECT id, name, description
     FROM topics
     WHERE subject_id = $1
     ORDER BY name
     `,
-    [params.subjectId]
-  )
+    [subjectId]
+  );
 
-  return NextResponse.json(rows)
+  return NextResponse.json(rows);
 }
