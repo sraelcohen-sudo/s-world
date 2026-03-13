@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { ExamTrack } from "@/types/database";
 
-export default function AdminTaxonomyClient() {
+export default function AdminTaxonomyDashboard() {
   const [tracks, setTracks] = useState<ExamTrack[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -33,7 +33,7 @@ export default function AdminTaxonomyClient() {
     setLoading(false);
   }
 
-  async function handleAddTrack(e: React.FormEvent) {
+  async function handleAddTrack(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     setMessage("");
@@ -67,7 +67,10 @@ export default function AdminTaxonomyClient() {
     setSaving(false);
   }
 
-  async function handleToggleTrackVisibility(trackId: string, nextActiveValue: boolean) {
+  async function handleToggleTrackVisibility(
+    trackId: string,
+    nextActiveValue: boolean
+  ) {
     setMessage("");
     setError("");
 
@@ -81,16 +84,25 @@ export default function AdminTaxonomyClient() {
       return;
     }
 
-    setMessage(nextActiveValue ? "Exam track is now visible." : "Exam track is now hidden.");
+    setMessage(
+      nextActiveValue ? "Exam track is now visible." : "Exam track is now hidden."
+    );
     await loadTracks();
   }
 
   useEffect(() => {
-    loadTracks();
+    void loadTracks();
   }, []);
 
-  const activeCount = tracks.filter((track) => track.active).length;
-  const hiddenCount = tracks.filter((track) => !track.active).length;
+  const activeCount = useMemo(
+    () => tracks.filter((track) => track.active).length,
+    [tracks]
+  );
+
+  const hiddenCount = useMemo(
+    () => tracks.filter((track) => !track.active).length,
+    [tracks]
+  );
 
   return (
     <div
@@ -130,6 +142,7 @@ export default function AdminTaxonomyClient() {
           >
             Track Name
           </label>
+
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -154,6 +167,7 @@ export default function AdminTaxonomyClient() {
           >
             Description
           </label>
+
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -287,7 +301,9 @@ export default function AdminTaxonomyClient() {
           </div>
 
           <button
-            onClick={loadTracks}
+            onClick={() => {
+              void loadTracks();
+            }}
             style={{
               backgroundColor: "#e2e8f0",
               color: "#0f172a",
@@ -342,6 +358,7 @@ export default function AdminTaxonomyClient() {
                     >
                       {track.name}
                     </h3>
+
                     <p
                       style={{
                         margin: 0,
@@ -377,9 +394,9 @@ export default function AdminTaxonomyClient() {
                     </span>
 
                     <button
-                      onClick={() =>
-                        handleToggleTrackVisibility(track.id, !track.active)
-                      }
+                      onClick={() => {
+                        void handleToggleTrackVisibility(track.id, !track.active);
+                      }}
                       style={{
                         backgroundColor: track.active ? "#fee2e2" : "#dcfce7",
                         color: track.active ? "#b91c1c" : "#166534",
