@@ -1,7 +1,7 @@
 import Link from "next/link";
-import AdminCompetenciesClient from "@/components/admin-competencies-client";
+import AdminCompetenciesDashboard from "@/components/admin-competencies-client";
 
-export default function CompetenciesAdminPage() {
+export default function AdminCompetenciesDashboardPage() {
   return (
     <main
       style={{
@@ -111,7 +111,7 @@ export default function CompetenciesAdminPage() {
         </div>
       </div>
 
-      <AdminCompetenciesClient />
+      <AdminCompetenciesDashboard />
     </main>
   );
 }
