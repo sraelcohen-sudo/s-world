@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export default function HomePage() {
+export default function PlatformHomePage() {
   return (
     <main
       style={{
@@ -44,13 +44,13 @@ export default function HomePage() {
             color: "#0f172a"
           }}
         >
-          Framework status
+          Framework Status
         </h2>
 
         <p style={{ color: "#475569", lineHeight: 1.6 }}>
-          Taxonomy, visibility controls, question authoring, review workflow, tutor mode,
-          timed mode, competency progress tracking, remediation mode, contributor rewards,
-          and admin analytics are now active.
+          Taxonomy, visibility controls, question authoring, review workflow,
+          tutor mode, timed mode, competency progress tracking, remediation mode,
+          contributor rewards, and admin analytics are now active.
         </p>
 
         <div
