@@ -1,7 +1,7 @@
 import Link from "next/link";
-import AdminBlueprintsClient from "@/components/admin-blueprints-client";
+import AdminBlueprintsDashboard from "@/components/admin-blueprints-client";
 
-export default function BlueprintsAdminPage() {
+export default function AdminBlueprintsDashboardPage() {
   return (
     <main
       style={{
@@ -127,7 +127,7 @@ export default function BlueprintsAdminPage() {
         </div>
       </div>
 
-      <AdminBlueprintsClient />
+      <AdminBlueprintsDashboard />
     </main>
   );
 }
