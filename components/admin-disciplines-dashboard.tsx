@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Discipline, ExamTrack } from "@/types/database";
 
-export default function AdminDisciplinesClient() {
+export default function AdminDisciplinesDashboard() {
   const [tracks, setTracks] = useState<ExamTrack[]>([]);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [selectedTrackId, setSelectedTrackId] = useState("");
@@ -18,6 +18,7 @@ export default function AdminDisciplinesClient() {
 
   async function loadTracks() {
     setLoadingTracks(true);
+    setError("");
 
     const { data, error } = await supabase
       .from("exam_tracks")
@@ -56,6 +57,7 @@ export default function AdminDisciplinesClient() {
 
   async function loadDisciplines() {
     setLoadingDisciplines(true);
+    setError("");
 
     const { data, error } = await supabase
       .from("disciplines")
@@ -73,7 +75,11 @@ export default function AdminDisciplinesClient() {
     setLoadingDisciplines(false);
   }
 
-  async function handleAddDiscipline(e: React.FormEvent) {
+  async function loadAll() {
+    await Promise.all([loadTracks(), loadDisciplines()]);
+  }
+
+  async function handleAddDiscipline(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     setMessage("");
@@ -114,8 +120,7 @@ export default function AdminDisciplinesClient() {
   }
 
   useEffect(() => {
-    loadTracks();
-    loadDisciplines();
+    void loadAll();
   }, []);
 
   const trackNameById = useMemo(() => {
@@ -126,9 +131,11 @@ export default function AdminDisciplinesClient() {
 
   const visibleDisciplines = useMemo(() => {
     const visibleTrackIds = new Set(tracks.map((track) => track.id));
+
     return disciplines.filter(
       (discipline) =>
-        discipline.exam_track_id !== null && visibleTrackIds.has(discipline.exam_track_id)
+        discipline.exam_track_id !== null &&
+        visibleTrackIds.has(discipline.exam_track_id)
     );
   }, [disciplines, tracks]);
 
@@ -206,6 +213,7 @@ export default function AdminDisciplinesClient() {
           >
             Discipline Name
           </label>
+
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -230,6 +238,7 @@ export default function AdminDisciplinesClient() {
           >
             Description
           </label>
+
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -317,8 +326,7 @@ export default function AdminDisciplinesClient() {
 
           <button
             onClick={() => {
-              loadTracks();
-              loadDisciplines();
+              void loadAll();
             }}
             style={{
               backgroundColor: "#e2e8f0",
