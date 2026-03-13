@@ -1,7 +1,7 @@
 import Link from "next/link";
-import LearnerRemediationClient from "@/components/learner-remediation-client";
+import LearnerRemediationDashboard from "@/components/learner-remediation-client";
 
-export default function LearnRemediationPage() {
+export default function LearnerRemediationDashboardPage() {
   return (
     <main
       style={{
@@ -33,6 +33,7 @@ export default function LearnRemediationPage() {
           >
             Learner Portal
           </p>
+
           <h1
             style={{
               margin: 0,
@@ -42,6 +43,7 @@ export default function LearnRemediationPage() {
           >
             Remediation Mode
           </h1>
+
           <p
             style={{
               margin: "10px 0 0 0",
@@ -102,7 +104,7 @@ export default function LearnRemediationPage() {
         </div>
       </div>
 
-      <LearnerRemediationClient />
+      <LearnerRemediationDashboard />
     </main>
   );
 }
