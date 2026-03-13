@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { supabase } from "@/lib/supabase";
 
 type ApprovedSubmission = {
@@ -11,7 +11,7 @@ type ApprovedSubmission = {
   question_id: string;
 };
 
-export default function ContributorRewardsClient() {
+export default function AuthorRewardsDashboard() {
   const [authorEmail, setAuthorEmail] = useState("");
   const [authorName, setAuthorName] = useState("");
   const [submissions, setSubmissions] = useState<ApprovedSubmission[]>([]);
@@ -28,33 +28,39 @@ export default function ContributorRewardsClient() {
 
     if (!cleanEmail || !cleanEmail.includes("@")) {
       setError("Enter a valid contributor email.");
-      setLoading(false);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("question_submissions")
-      .select("id, author_name, author_email, approved_at, question_id")
-      .eq("author_email", cleanEmail)
-      .eq("status", "approved")
-      .not("approved_at", "is", null)
-      .order("approved_at", { ascending: false });
-
-    if (error) {
-      setError(error.message);
       setSubmissions([]);
       setLoading(false);
       return;
     }
 
-    const loaded = (data ?? []) as ApprovedSubmission[];
-    setSubmissions(loaded);
+    try {
+      const { data, error: queryError } = await supabase
+        .from("question_submissions")
+        .select("id, author_name, author_email, approved_at, question_id")
+        .eq("author_email", cleanEmail)
+        .eq("status", "approved")
+        .not("approved_at", "is", null)
+        .order("approved_at", { ascending: false });
 
-    if (!authorName.trim() && loaded.length > 0 && loaded[0].author_name) {
-      setAuthorName(loaded[0].author_name ?? "");
+      if (queryError) {
+        setError(queryError.message);
+        setSubmissions([]);
+        return;
+      }
+
+      const loaded = (data ?? []) as ApprovedSubmission[];
+      setSubmissions(loaded);
+
+      if (loaded.length > 0) {
+        setAuthorName(loaded[0].author_name?.trim() || authorName.trim());
+      }
+    } catch (err) {
+      console.error("Error checking contributor rewards:", err);
+      setError("Unable to check contributor rewards.");
+      setSubmissions([]);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   const currentMonthKey = new Date().toISOString().slice(0, 7);
@@ -67,6 +73,7 @@ export default function ContributorRewardsClient() {
   }, [submissions, currentMonthKey]);
 
   const eligible = currentMonthApprovals.length >= 2;
+  const displayName = authorName.trim() || "Contributor";
 
   return (
     <div style={{ display: "grid", gap: "24px" }}>
@@ -93,13 +100,24 @@ export default function ContributorRewardsClient() {
 
         <label style={labelStyle}>Contributor Email</label>
         <input
+          type="email"
           value={authorEmail}
           onChange={(e) => setAuthorEmail(e.target.value)}
           placeholder="jane@example.com"
           style={inputStyle}
         />
 
-        <button onClick={handleSearch} disabled={loading} style={primaryButtonStyle}>
+        <button
+          onClick={() => {
+            void handleSearch();
+          }}
+          disabled={loading}
+          style={{
+            ...primaryButtonStyle,
+            opacity: loading ? 0.7 : 1,
+            cursor: loading ? "not-allowed" : "pointer"
+          }}
+        >
           {loading ? "Checking..." : "Check This Month"}
         </button>
 
@@ -121,7 +139,18 @@ export default function ContributorRewardsClient() {
               Monthly Reward Status
             </h2>
 
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "16px" }}>
+            <p style={{ margin: "0 0 16px 0", color: "#475569" }}>
+              {displayName}
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                flexWrap: "wrap",
+                marginBottom: "16px"
+              }}
+            >
               <span style={summaryPillStyle}>Month: {currentMonthKey}</span>
               <span style={summaryPillStyle}>
                 Approved This Month: {currentMonthApprovals.length}
@@ -138,7 +167,8 @@ export default function ContributorRewardsClient() {
             </div>
 
             <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>
-              Rule: 2 approved questions in the same month = 1 free membership month.
+              Rule: 2 approved questions in the same month = 1 free membership
+              month.
             </p>
           </section>
 
@@ -155,7 +185,9 @@ export default function ContributorRewardsClient() {
             </h2>
 
             {submissions.length === 0 ? (
-              <p style={{ color: "#475569" }}>No approved questions found for this contributor.</p>
+              <p style={{ color: "#475569" }}>
+                No approved questions found for this contributor.
+              </p>
             ) : (
               <div style={{ display: "grid", gap: "12px" }}>
                 {submissions.map((submission) => (
@@ -180,7 +212,13 @@ export default function ContributorRewardsClient() {
                       Approved
                     </p>
 
-                    <p style={{ margin: "0 0 8px 0", color: "#0f172a", fontWeight: 700 }}>
+                    <p
+                      style={{
+                        margin: "0 0 8px 0",
+                        color: "#0f172a",
+                        fontWeight: 700
+                      }}
+                    >
                       Question ID: {submission.question_id}
                     </p>
 
@@ -198,14 +236,14 @@ export default function ContributorRewardsClient() {
   );
 }
 
-const labelStyle: React.CSSProperties = {
+const labelStyle: CSSProperties = {
   display: "block",
   fontSize: "14px",
   fontWeight: 700,
   marginBottom: "8px"
 };
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   width: "100%",
   maxWidth: "520px",
   padding: "12px",
@@ -216,17 +254,16 @@ const inputStyle: React.CSSProperties = {
   backgroundColor: "#fff"
 };
 
-const primaryButtonStyle: React.CSSProperties = {
+const primaryButtonStyle: CSSProperties = {
   backgroundColor: "#0f2d69",
   color: "#ffffff",
   border: "none",
   borderRadius: "10px",
   padding: "12px 18px",
-  fontWeight: 700,
-  cursor: "pointer"
+  fontWeight: 700
 };
 
-const summaryPillStyle: React.CSSProperties = {
+const summaryPillStyle: CSSProperties = {
   borderRadius: "999px",
   padding: "8px 12px",
   fontSize: "12px",
@@ -235,7 +272,7 @@ const summaryPillStyle: React.CSSProperties = {
   color: "#1d4ed8"
 };
 
-const errorStyle: React.CSSProperties = {
+const errorStyle: CSSProperties = {
   marginTop: "16px",
   color: "#b91c1c",
   fontWeight: 700
