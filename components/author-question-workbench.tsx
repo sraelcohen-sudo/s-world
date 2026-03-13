@@ -143,9 +143,9 @@ export default function AuthorQuestionWorkbench() {
         setForm((prev) => ({
           ...prev,
           subjectId:
-            loadedSubjects.find((subject) => subject.id === prev.subjectId)?.id ??
-            prev.subjectId ||
-            loadedSubjects[0].id
+  loadedSubjects.find((subject) => subject.id === prev.subjectId)?.id ??
+  prev.subjectId ??
+  loadedSubjects[0].id
         }));
       }
     } catch (err) {
