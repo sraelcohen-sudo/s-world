@@ -1,7 +1,7 @@
 import Link from "next/link";
-import ReviewQueueClient from "@/components/review-queue-client";
+import ReviewerQueueDashboard from "@/components/review-queue-client";
 
-export default function ReviewerQueuePage() {
+export default function ReviewerQueueDashboardPage() {
   return (
     <main
       style={{
@@ -33,6 +33,7 @@ export default function ReviewerQueuePage() {
           >
             Reviewer Portal
           </p>
+
           <h1
             style={{
               margin: 0,
@@ -42,6 +43,7 @@ export default function ReviewerQueuePage() {
           >
             Review Queue
           </h1>
+
           <p
             style={{
               margin: "10px 0 0 0",
@@ -88,7 +90,7 @@ export default function ReviewerQueuePage() {
         </div>
       </div>
 
-      <ReviewQueueClient />
+      <ReviewerQueueDashboard />
     </main>
   );
 }
