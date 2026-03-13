@@ -1,12 +1,11 @@
-import { Pool } from "pg";
+import { Pool, type QueryResultRow } from "pg";
 
 declare global {
-  // Prevent multiple pools during local hot reloads
   // eslint-disable-next-line no-var
   var __pgPool__: Pool | undefined;
 }
 
-function createPool() {
+function createPool(): Pool {
   const connectionString = process.env.DATABASE_URL;
 
   if (!connectionString) {
@@ -18,20 +17,22 @@ function createPool() {
     ssl:
       process.env.NODE_ENV === "production"
         ? { rejectUnauthorized: false }
-        : false,
+        : false
   });
 }
 
-export const pool = global.__pgPool__ ?? createPool();
+const globalPool = globalThis.__pgPool__;
+
+export const pool: Pool = globalPool ?? createPool();
 
 if (process.env.NODE_ENV !== "production") {
-  global.__pgPool__ = pool;
+  globalThis.__pgPool__ = pool;
 }
 
-export async function query<T = unknown>(
+export async function query<T extends QueryResultRow = QueryResultRow>(
   text: string,
   params: unknown[] = []
 ): Promise<T[]> {
-  const result = await pool.query(text, params);
-  return result.rows as T[];
+  const result = await pool.query<T>(text, params);
+  return result.rows;
 }
