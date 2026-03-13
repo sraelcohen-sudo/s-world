@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties
+} from "react";
 import { supabase } from "@/lib/supabase";
 import type { Competency, Discipline, ExamTrack } from "@/types/database";
 
@@ -31,11 +36,13 @@ type CompetencyProgressRow = {
   status: "Not enough data" | "Below threshold" | "At threshold" | "Mastered";
 };
 
-export default function LearnerProgressClient() {
+export default function LearnerProgressDashboard() {
   const [tracks, setTracks] = useState<ExamTrack[]>([]);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [competencies, setCompetencies] = useState<Competency[]>([]);
-  const [sessionQuestions, setSessionQuestions] = useState<NormalizedSessionQuestion[]>([]);
+  const [sessionQuestions, setSessionQuestions] = useState<
+    NormalizedSessionQuestion[]
+  >([]);
 
   const [selectedTrackId, setSelectedTrackId] = useState("");
   const [selectedDisciplineId, setSelectedDisciplineId] = useState("");
@@ -47,27 +54,41 @@ export default function LearnerProgressClient() {
     setLoading(true);
     setError("");
 
-    const [tracksResult, disciplinesResult, competenciesResult, sessionQuestionsResult] =
-      await Promise.all([
-        supabase.from("exam_tracks").select("*").eq("active", true).order("name", { ascending: true }),
-        supabase.from("disciplines").select("*").order("name", { ascending: true }),
-        supabase.from("competencies").select("*").order("name", { ascending: true }),
-        supabase
-          .from("session_questions")
-          .select(
-            `
+    const [
+      tracksResult,
+      disciplinesResult,
+      competenciesResult,
+      sessionQuestionsResult
+    ] = await Promise.all([
+      supabase
+        .from("exam_tracks")
+        .select("*")
+        .eq("active", true)
+        .order("name", { ascending: true }),
+      supabase
+        .from("disciplines")
+        .select("*")
+        .order("name", { ascending: true }),
+      supabase
+        .from("competencies")
+        .select("*")
+        .order("name", { ascending: true }),
+      supabase
+        .from("session_questions")
+        .select(
+          `
+            id,
+            is_correct,
+            questions (
               id,
-              is_correct,
-              questions (
-                id,
-                exam_track_id,
-                discipline_id,
-                competency_id
-              )
-            `
-          )
-          .not("is_correct", "is", null)
-      ]);
+              exam_track_id,
+              discipline_id,
+              competency_id
+            )
+          `
+        )
+        .not("is_correct", "is", null)
+    ]);
 
     if (tracksResult.error) {
       setError(tracksResult.error.message);
@@ -96,17 +117,21 @@ export default function LearnerProgressClient() {
     const loadedTracks = (tracksResult.data ?? []) as ExamTrack[];
     const loadedDisciplines = (disciplinesResult.data ?? []) as Discipline[];
     const loadedCompetencies = (competenciesResult.data ?? []) as Competency[];
-    const rawSessionQuestions = ((sessionQuestionsResult.data ?? []) as unknown[]) as RawSessionQuestion[];
+    const rawSessionQuestions = (sessionQuestionsResult.data ??
+      []) as RawSessionQuestion[];
 
-    const normalizedSessionQuestions: NormalizedSessionQuestion[] = rawSessionQuestions.map((row) => {
-      const question = Array.isArray(row.questions) ? row.questions[0] ?? null : row.questions ?? null;
+    const normalizedSessionQuestions: NormalizedSessionQuestion[] =
+      rawSessionQuestions.map((row) => {
+        const question = Array.isArray(row.questions)
+          ? row.questions[0] ?? null
+          : row.questions ?? null;
 
-      return {
-        id: row.id,
-        is_correct: row.is_correct,
-        question
-      };
-    });
+        return {
+          id: row.id,
+          is_correct: row.is_correct,
+          question
+        };
+      });
 
     setTracks(loadedTracks);
     setDisciplines(loadedDisciplines);
@@ -133,19 +158,23 @@ export default function LearnerProgressClient() {
   }
 
   useEffect(() => {
-    loadAll();
+    void loadAll();
   }, []);
 
   const visibleDisciplines = useMemo(() => {
     const visibleTrackIds = new Set(tracks.map((track) => track.id));
+
     return disciplines.filter(
       (discipline) =>
-        discipline.exam_track_id !== null && visibleTrackIds.has(discipline.exam_track_id)
+        discipline.exam_track_id !== null &&
+        visibleTrackIds.has(discipline.exam_track_id)
     );
   }, [disciplines, tracks]);
 
   const filteredDisciplines = useMemo(() => {
-    return visibleDisciplines.filter((discipline) => discipline.exam_track_id === selectedTrackId);
+    return visibleDisciplines.filter(
+      (discipline) => discipline.exam_track_id === selectedTrackId
+    );
   }, [visibleDisciplines, selectedTrackId]);
 
   useEffect(() => {
@@ -154,14 +183,19 @@ export default function LearnerProgressClient() {
       return;
     }
 
-    const exists = filteredDisciplines.some((discipline) => discipline.id === selectedDisciplineId);
+    const exists = filteredDisciplines.some(
+      (discipline) => discipline.id === selectedDisciplineId
+    );
+
     if (!exists) {
       setSelectedDisciplineId(filteredDisciplines[0].id);
     }
   }, [filteredDisciplines, selectedDisciplineId]);
 
   const filteredCompetencies = useMemo(() => {
-    return competencies.filter((competency) => competency.discipline_id === selectedDisciplineId);
+    return competencies.filter(
+      (competency) => competency.discipline_id === selectedDisciplineId
+    );
   }, [competencies, selectedDisciplineId]);
 
   const progressRows = useMemo<CompetencyProgressRow[]>(() => {
@@ -174,8 +208,11 @@ export default function LearnerProgressClient() {
       );
 
       const attempted = relatedAnswers.length;
-      const correct = relatedAnswers.filter((row) => row.is_correct === true).length;
-      const percent = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
+      const correct = relatedAnswers.filter(
+        (row) => row.is_correct === true
+      ).length;
+      const percent =
+        attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
 
       let status: CompetencyProgressRow["status"] = "Not enough data";
 
@@ -200,10 +237,18 @@ export default function LearnerProgressClient() {
   }, [filteredCompetencies, sessionQuestions, selectedTrackId, selectedDisciplineId]);
 
   const summary = useMemo(() => {
-    const mastered = progressRows.filter((row) => row.status === "Mastered").length;
-    const atThreshold = progressRows.filter((row) => row.status === "At threshold").length;
-    const below = progressRows.filter((row) => row.status === "Below threshold").length;
-    const notEnough = progressRows.filter((row) => row.status === "Not enough data").length;
+    const mastered = progressRows.filter(
+      (row) => row.status === "Mastered"
+    ).length;
+    const atThreshold = progressRows.filter(
+      (row) => row.status === "At threshold"
+    ).length;
+    const below = progressRows.filter(
+      (row) => row.status === "Below threshold"
+    ).length;
+    const notEnough = progressRows.filter(
+      (row) => row.status === "Not enough data"
+    ).length;
 
     return {
       mastered,
@@ -213,7 +258,9 @@ export default function LearnerProgressClient() {
     };
   }, [progressRows]);
 
-  function getStatusStyle(status: CompetencyProgressRow["status"]): React.CSSProperties {
+  function getStatusStyle(
+    status: CompetencyProgressRow["status"]
+  ): CSSProperties {
     if (status === "Mastered") {
       return {
         backgroundColor: "#dcfce7",
@@ -294,7 +341,12 @@ export default function LearnerProgressClient() {
               )}
             </select>
 
-            <button onClick={loadAll} style={primaryButtonStyle}>
+            <button
+              onClick={() => {
+                void loadAll();
+              }}
+              style={primaryButtonStyle}
+            >
               Refresh Progress
             </button>
           </>
@@ -324,16 +376,43 @@ export default function LearnerProgressClient() {
                 flexWrap: "wrap"
               }}
             >
-              <span style={{ ...summaryPillStyle, backgroundColor: "#dcfce7", color: "#166534" }}>
+              <span
+                style={{
+                  ...summaryPillStyle,
+                  backgroundColor: "#dcfce7",
+                  color: "#166534"
+                }}
+              >
                 Mastered: {summary.mastered}
               </span>
-              <span style={{ ...summaryPillStyle, backgroundColor: "#dbeafe", color: "#1d4ed8" }}>
+
+              <span
+                style={{
+                  ...summaryPillStyle,
+                  backgroundColor: "#dbeafe",
+                  color: "#1d4ed8"
+                }}
+              >
                 At Threshold: {summary.atThreshold}
               </span>
-              <span style={{ ...summaryPillStyle, backgroundColor: "#fee2e2", color: "#b91c1c" }}>
+
+              <span
+                style={{
+                  ...summaryPillStyle,
+                  backgroundColor: "#fee2e2",
+                  color: "#b91c1c"
+                }}
+              >
                 Below Threshold: {summary.below}
               </span>
-              <span style={{ ...summaryPillStyle, backgroundColor: "#f1f5f9", color: "#475569" }}>
+
+              <span
+                style={{
+                  ...summaryPillStyle,
+                  backgroundColor: "#f1f5f9",
+                  color: "#475569"
+                }}
+              >
                 Not Enough Data: {summary.notEnough}
               </span>
             </div>
@@ -352,7 +431,9 @@ export default function LearnerProgressClient() {
             </h2>
 
             {progressRows.length === 0 ? (
-              <p style={{ color: "#475569" }}>No competencies found for this discipline.</p>
+              <p style={{ color: "#475569" }}>
+                No competencies found for this discipline.
+              </p>
             ) : (
               <div style={{ display: "grid", gap: "14px" }}>
                 {progressRows.map((row) => (
@@ -447,14 +528,14 @@ export default function LearnerProgressClient() {
   );
 }
 
-const labelStyle: React.CSSProperties = {
+const labelStyle: CSSProperties = {
   display: "block",
   fontSize: "14px",
   fontWeight: 700,
   marginBottom: "8px"
 };
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   width: "100%",
   padding: "12px",
   borderRadius: "10px",
@@ -465,7 +546,7 @@ const inputStyle: React.CSSProperties = {
   maxWidth: "520px"
 };
 
-const primaryButtonStyle: React.CSSProperties = {
+const primaryButtonStyle: CSSProperties = {
   backgroundColor: "#0f2d69",
   color: "#ffffff",
   border: "none",
@@ -475,7 +556,7 @@ const primaryButtonStyle: React.CSSProperties = {
   cursor: "pointer"
 };
 
-const summaryPillStyle: React.CSSProperties = {
+const summaryPillStyle: CSSProperties = {
   borderRadius: "999px",
   padding: "8px 12px",
   fontSize: "12px",
@@ -484,7 +565,7 @@ const summaryPillStyle: React.CSSProperties = {
   color: "#1d4ed8"
 };
 
-const errorStyle: React.CSSProperties = {
+const errorStyle: CSSProperties = {
   marginTop: "16px",
   color: "#b91c1c",
   fontWeight: 700
