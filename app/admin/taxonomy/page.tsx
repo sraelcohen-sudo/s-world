@@ -1,7 +1,7 @@
 import Link from "next/link";
-import AdminTaxonomyClient from "@/components/admin-taxonomy-client";
+import AdminTaxonomyDashboard from "@/components/admin-taxonomy-client";
 
-export default function TaxonomyAdminPage() {
+export default function AdminTaxonomyDashboardPage() {
   return (
     <main
       style={{
@@ -33,6 +33,7 @@ export default function TaxonomyAdminPage() {
           >
             Admin
           </p>
+
           <h1
             style={{
               margin: 0,
@@ -42,6 +43,7 @@ export default function TaxonomyAdminPage() {
           >
             Taxonomy Dashboard
           </h1>
+
           <p
             style={{
               margin: "10px 0 0 0",
@@ -121,7 +123,7 @@ export default function TaxonomyAdminPage() {
         </div>
       </div>
 
-      <AdminTaxonomyClient />
+      <AdminTaxonomyDashboard />
     </main>
   );
 }
