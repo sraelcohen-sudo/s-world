@@ -1,7 +1,7 @@
 import Link from "next/link";
-import LearnerPracticeClient from "@/components/learner-practice-client";
+import LearnerPracticeDashboard from "@/components/learner-practice-client";
 
-export default function LearnPracticePage() {
+export default function LearnerPracticeDashboardPage() {
   return (
     <main
       style={{
@@ -33,6 +33,7 @@ export default function LearnPracticePage() {
           >
             Learner Portal
           </p>
+
           <h1
             style={{
               margin: 0,
@@ -42,6 +43,7 @@ export default function LearnPracticePage() {
           >
             Practice Block
           </h1>
+
           <p
             style={{
               margin: "10px 0 0 0",
@@ -50,7 +52,8 @@ export default function LearnPracticePage() {
               lineHeight: 1.6
             }}
           >
-            Start a tutor-mode or timed-mode practice block using approved questions from active exam tracks.
+            Start a tutor-mode or timed-mode practice block using approved
+            questions from active exam tracks.
           </p>
         </div>
 
@@ -102,7 +105,7 @@ export default function LearnPracticePage() {
         </div>
       </div>
 
-      <LearnerPracticeClient />
+      <LearnerPracticeDashboard />
     </main>
   );
 }
