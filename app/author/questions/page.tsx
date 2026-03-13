@@ -1,7 +1,7 @@
 import Link from "next/link";
-import QuestionAuthorClient from "@/components/question-author-client";
+import AuthorQuestionSubmissionDashboard from "@/components/question-author-client";
 
-export default function AuthorQuestionsPage() {
+export default function AuthorQuestionSubmissionPage() {
   return (
     <main
       style={{
@@ -33,6 +33,7 @@ export default function AuthorQuestionsPage() {
           >
             Author Portal
           </p>
+
           <h1
             style={{
               margin: 0,
@@ -42,6 +43,7 @@ export default function AuthorQuestionsPage() {
           >
             Question Submission
           </h1>
+
           <p
             style={{
               margin: "10px 0 0 0",
@@ -50,8 +52,8 @@ export default function AuthorQuestionsPage() {
               lineHeight: 1.6
             }}
           >
-            Create exam-ready questions, classify them by taxonomy, and submit them
-            for review.
+            Create exam-ready questions, classify them by taxonomy, and submit
+            them for review.
           </p>
         </div>
 
@@ -102,7 +104,7 @@ export default function AuthorQuestionsPage() {
         </div>
       </div>
 
-      <QuestionAuthorClient />
+      <AuthorQuestionSubmissionDashboard />
     </main>
   );
 }
