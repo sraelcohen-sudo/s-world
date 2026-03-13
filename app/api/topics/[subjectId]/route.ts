@@ -5,21 +5,44 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+type RouteParams = {
+  params: {
+    subjectId: string;
+  };
+};
+
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ subjectId: string }> }
+  { params }: RouteParams
 ) {
-  const { subjectId } = await context.params;
+  try {
+    const { subjectId } = params;
 
-  const { rows } = await pool.query(
-    `
-    SELECT id, name, description
-    FROM topics
-    WHERE subject_id = $1
-    ORDER BY name
-    `,
-    [subjectId]
-  );
+    const query = `
+      SELECT
+        id,
+        name,
+    description
+      FROM topics
+      WHERE subject_id = $1
+      ORDER BY name
+    `;
 
-  return NextResponse.json(rows);
+    const { rows } = await pool.query(query, [subjectId]);
+
+    return NextResponse.json({
+      success: true,
+      topics: rows,
+    });
+  } catch (error) {
+    console.error("Error fetching topics:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to fetch topics",
+      },
+      { status: 500 }
+    );
+  }
 }
