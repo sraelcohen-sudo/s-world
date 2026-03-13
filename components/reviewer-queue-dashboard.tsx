@@ -1,7 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { supabase } from "@/lib/supabase";
+
+type SubmissionStatus =
+  | "draft"
+  | "submitted"
+  | "under_review"
+  | "needs_revision"
+  | "approved"
+  | "rejected"
+  | "retired";
 
 type SubmissionQuestion = {
   id: string;
@@ -15,14 +24,7 @@ type SubmissionQuestion = {
   difficulty: "easy" | "medium" | "hard";
   cognitive_level: "recall" | "application" | "clinical_reasoning";
   question_type: "MCQ" | "IMAGE" | "LAB_INTERPRETATION" | "CASE_SERIES";
-  status:
-    | "draft"
-    | "submitted"
-    | "under_review"
-    | "needs_revision"
-    | "approved"
-    | "rejected"
-    | "retired";
+  status: SubmissionStatus;
   exam_track_id: string | null;
   discipline_id: string | null;
   competency_id: string | null;
@@ -34,7 +36,7 @@ type SubmissionQuestion = {
 type RawSubmissionListItem = {
   id: string;
   question_id: string;
-  status: "draft" | "submitted" | "under_review" | "needs_revision" | "approved" | "rejected";
+  status: Exclude<SubmissionStatus, "retired">;
   submitted_at: string;
   reviewer_notes: string | null;
   internal_notes: string | null;
@@ -47,7 +49,7 @@ type RawSubmissionListItem = {
 type SubmissionListItem = {
   id: string;
   question_id: string;
-  status: "draft" | "submitted" | "under_review" | "needs_revision" | "approved" | "rejected";
+  status: Exclude<SubmissionStatus, "retired">;
   submitted_at: string;
   reviewer_notes: string | null;
   internal_notes: string | null;
@@ -74,7 +76,7 @@ type QuestionReference = {
 
 type ReviewDecision = "approve" | "request_revision" | "reject";
 
-export default function ReviewQueueClient() {
+export default function ReviewerQueueDashboard() {
   const [submissions, setSubmissions] = useState<SubmissionListItem[]>([]);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState("");
   const [options, setOptions] = useState<AnswerOption[]>([]);
@@ -96,7 +98,7 @@ export default function ReviewQueueClient() {
     setLoadingQueue(true);
     setError("");
 
-    const { data, error } = await supabase
+    const { data, error: queueError } = await supabase
       .from("question_submissions")
       .select(
         `
@@ -134,14 +136,14 @@ export default function ReviewQueueClient() {
       .in("status", ["submitted", "under_review", "needs_revision"])
       .order("submitted_at", { ascending: true });
 
-    if (error) {
-      setError(error.message);
+    if (queueError) {
+      setError(queueError.message);
       setSubmissions([]);
       setLoadingQueue(false);
       return;
     }
 
-    const raw = ((data ?? []) as unknown[]) as RawSubmissionListItem[];
+    const raw = (data ?? []) as RawSubmissionListItem[];
 
     const loaded: SubmissionListItem[] = raw.map((submission) => {
       const question = Array.isArray(submission.questions)
@@ -169,7 +171,10 @@ export default function ReviewQueueClient() {
   }
 
   const selectedSubmission = useMemo(() => {
-    return submissions.find((submission) => submission.id === selectedSubmissionId) || null;
+    return (
+      submissions.find((submission) => submission.id === selectedSubmissionId) ??
+      null
+    );
   }, [submissions, selectedSubmissionId]);
 
   async function loadSelectedDetails(questionId: string) {
@@ -211,12 +216,12 @@ export default function ReviewQueueClient() {
   }
 
   useEffect(() => {
-    loadQueue();
+    void loadQueue();
   }, []);
 
   useEffect(() => {
     if (selectedSubmission?.question_id) {
-      loadSelectedDetails(selectedSubmission.question_id);
+      void loadSelectedDetails(selectedSubmission.question_id);
     } else {
       setOptions([]);
       setReferences([]);
@@ -229,13 +234,13 @@ export default function ReviewQueueClient() {
     setMessage("");
     setError("");
 
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from("question_submissions")
       .update({ status: "under_review" })
       .eq("id", selectedSubmissionId);
 
-    if (error) {
-      setError(error.message);
+    if (updateError) {
+      setError(updateError.message);
       return;
     }
 
@@ -243,8 +248,8 @@ export default function ReviewQueueClient() {
     setMessage("Submission marked as under review.");
   }
 
-  async function handleSubmitReview(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmitReview(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
     if (!selectedSubmission || !selectedSubmission.questions) {
       setError("No submission selected.");
@@ -262,7 +267,8 @@ export default function ReviewQueueClient() {
 
     if (
       [ca, eq, exq, clq].some(
-        (value) => Number.isNaN(value) || value < 1 || value > 5 || !Number.isInteger(value)
+        (value) =>
+          Number.isNaN(value) || value < 1 || value > 5 || !Number.isInteger(value)
       )
     ) {
       setError("All rubric scores must be whole numbers from 1 to 5.");
@@ -289,14 +295,14 @@ export default function ReviewQueueClient() {
       return;
     }
 
-    const nextQuestionStatus =
+    const nextQuestionStatus: SubmissionStatus =
       decision === "approve"
         ? "approved"
         : decision === "request_revision"
           ? "needs_revision"
           : "rejected";
 
-    const nextSubmissionStatus =
+    const nextSubmissionStatus: Exclude<SubmissionStatus, "retired"> =
       decision === "approve"
         ? "approved"
         : decision === "request_revision"
@@ -352,36 +358,15 @@ export default function ReviewQueueClient() {
         alignItems: "start"
       }}
     >
-      <section
-        style={{
-          background: "#ffffff",
-          borderRadius: "12px",
-          padding: "24px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)"
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "16px",
-            gap: "12px"
-          }}
-        >
+      <section style={cardStyle}>
+        <div style={toolbarStyle}>
           <h2 style={{ margin: 0, color: "#0f2d69" }}>Review Queue</h2>
 
           <button
-            onClick={loadQueue}
-            style={{
-              backgroundColor: "#e2e8f0",
-              color: "#0f172a",
-              border: "none",
-              borderRadius: "10px",
-              padding: "10px 14px",
-              fontWeight: 700,
-              cursor: "pointer"
+            onClick={() => {
+              void loadQueue();
             }}
+            style={secondaryButtonStyle}
           >
             Refresh
           </button>
@@ -404,54 +389,26 @@ export default function ReviewQueueClient() {
                     submission.id === selectedSubmissionId
                       ? "2px solid #0f2d69"
                       : "1px solid #e2e8f0",
-                  backgroundColor: submission.id === selectedSubmissionId ? "#eff6ff" : "#ffffff",
+                  backgroundColor:
+                    submission.id === selectedSubmissionId ? "#eff6ff" : "#ffffff",
                   borderRadius: "12px",
                   padding: "14px",
                   cursor: "pointer"
                 }}
               >
-                <p
-                  style={{
-                    margin: "0 0 8px 0",
-                    color: "#64748b",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em"
-                  }}
-                >
-                  {submission.status}
-                </p>
+                <p style={queueTagStyle}>{submission.status}</p>
 
-                <h3
-                  style={{
-                    margin: "0 0 8px 0",
-                    color: "#0f172a",
-                    fontSize: "18px"
-                  }}
-                >
+                <h3 style={queueTitleStyle}>
                   {submission.questions?.title || "Untitled question"}
                 </h3>
 
-                <p
-                  style={{
-                    margin: "0 0 8px 0",
-                    color: "#475569",
-                    lineHeight: 1.5
-                  }}
-                >
+                <p style={queuePreviewStyle}>
                   {submission.questions?.lead_in ||
                     submission.questions?.stem.slice(0, 120) ||
                     "No preview available."}
                 </p>
 
-                <p
-                  style={{
-                    margin: 0,
-                    color: "#64748b",
-                    fontSize: "13px"
-                  }}
-                >
+                <p style={queueMetaStyle}>
                   {submission.author_name || "Unknown contributor"}
                   {submission.author_email ? ` • ${submission.author_email}` : ""}
                 </p>
@@ -461,67 +418,34 @@ export default function ReviewQueueClient() {
         )}
       </section>
 
-      <section
-        style={{
-          display: "grid",
-          gap: "24px"
-        }}
-      >
-        <section
-          style={{
-            background: "#ffffff",
-            borderRadius: "12px",
-            padding: "24px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.08)"
-          }}
-        >
+      <section style={{ display: "grid", gap: "24px" }}>
+        <section style={cardStyle}>
           {!selectedSubmission || !selectedSubmission.questions ? (
-            <p style={{ color: "#475569", margin: 0 }}>Select a submission to review.</p>
+            <p style={{ color: "#475569", margin: 0 }}>
+              Select a submission to review.
+            </p>
           ) : (
             <>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "start",
-                  gap: "16px",
-                  flexWrap: "wrap",
-                  marginBottom: "20px"
-                }}
-              >
+              <div style={detailHeaderStyle}>
                 <div>
-                  <p
-                    style={{
-                      margin: "0 0 8px 0",
-                      color: "#64748b",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em"
-                    }}
-                  >
-                    Question Review
-                  </p>
+                  <p style={queueTagStyle}>Question Review</p>
                   <h2 style={{ margin: 0, color: "#0f2d69" }}>
                     {selectedSubmission.questions.title || "Untitled question"}
                   </h2>
                   <p style={{ margin: "8px 0 0 0", color: "#475569" }}>
-                    Contributor: {selectedSubmission.author_name || "Unknown contributor"}
-                    {selectedSubmission.author_email ? ` • ${selectedSubmission.author_email}` : ""}
+                    Contributor:{" "}
+                    {selectedSubmission.author_name || "Unknown contributor"}
+                    {selectedSubmission.author_email
+                      ? ` • ${selectedSubmission.author_email}`
+                      : ""}
                   </p>
                 </div>
 
                 <button
-                  onClick={markUnderReview}
-                  style={{
-                    backgroundColor: "#e2e8f0",
-                    color: "#0f172a",
-                    border: "none",
-                    borderRadius: "10px",
-                    padding: "10px 14px",
-                    fontWeight: 700,
-                    cursor: "pointer"
+                  onClick={() => {
+                    void markUnderReview();
                   }}
+                  style={secondaryButtonStyle}
                 >
                   Mark Under Review
                 </button>
@@ -536,7 +460,9 @@ export default function ReviewQueueClient() {
                 {selectedSubmission.questions.lead_in ? (
                   <div>
                     <h3 style={sectionHeadingStyle}>Lead-in</h3>
-                    <p style={bodyTextStyle}>{selectedSubmission.questions.lead_in}</p>
+                    <p style={bodyTextStyle}>
+                      {selectedSubmission.questions.lead_in}
+                    </p>
                   </div>
                 ) : null}
 
@@ -568,24 +494,16 @@ export default function ReviewQueueClient() {
                             }}
                           >
                             <div>
-                              <strong style={{ color: "#0f2d69" }}>{option.option_label}.</strong>{" "}
-                              <span style={{ color: "#334155" }}>{option.option_text}</span>
+                              <strong style={{ color: "#0f2d69" }}>
+                                {option.option_label}.
+                              </strong>{" "}
+                              <span style={{ color: "#334155" }}>
+                                {option.option_text}
+                              </span>
                             </div>
 
                             {option.is_correct ? (
-                              <span
-                                style={{
-                                  backgroundColor: "#dcfce7",
-                                  color: "#166534",
-                                  borderRadius: "999px",
-                                  padding: "6px 10px",
-                                  fontSize: "12px",
-                                  fontWeight: 700,
-                                  whiteSpace: "nowrap"
-                                }}
-                              >
-                                Correct
-                              </span>
+                              <span style={correctPillStyle}>Correct</span>
                             ) : null}
                           </div>
                         </div>
@@ -596,20 +514,26 @@ export default function ReviewQueueClient() {
 
                 <div>
                   <h3 style={sectionHeadingStyle}>Explanation</h3>
-                  <p style={bodyTextStyle}>{selectedSubmission.questions.explanation}</p>
+                  <p style={bodyTextStyle}>
+                    {selectedSubmission.questions.explanation}
+                  </p>
                 </div>
 
                 {selectedSubmission.questions.strategy_text ? (
                   <div>
                     <h3 style={sectionHeadingStyle}>Strategy</h3>
-                    <p style={bodyTextStyle}>{selectedSubmission.questions.strategy_text}</p>
+                    <p style={bodyTextStyle}>
+                      {selectedSubmission.questions.strategy_text}
+                    </p>
                   </div>
                 ) : null}
 
                 {selectedSubmission.questions.resources_text ? (
                   <div>
                     <h3 style={sectionHeadingStyle}>Resources</h3>
-                    <p style={bodyTextStyle}>{selectedSubmission.questions.resources_text}</p>
+                    <p style={bodyTextStyle}>
+                      {selectedSubmission.questions.resources_text}
+                    </p>
                   </div>
                 ) : null}
 
@@ -638,14 +562,22 @@ export default function ReviewQueueClient() {
                             padding: "12px"
                           }}
                         >
-                          <strong style={{ color: "#0f172a" }}>{reference.source_title}</strong>
+                          <strong style={{ color: "#0f172a" }}>
+                            {reference.source_title}
+                          </strong>
                           <p style={{ margin: "8px 0 0 0", color: "#475569" }}>
                             {[reference.source_author, reference.source_year]
                               .filter(Boolean)
                               .join(", ") || "No author/year provided."}
                           </p>
                           {reference.source_link ? (
-                            <p style={{ margin: "8px 0 0 0", color: "#1d4ed8" }}>
+                            <p
+                              style={{
+                                margin: "8px 0 0 0",
+                                color: "#1d4ed8",
+                                wordBreak: "break-word"
+                              }}
+                            >
                               {reference.source_link}
                             </p>
                           ) : null}
@@ -659,14 +591,7 @@ export default function ReviewQueueClient() {
           )}
         </section>
 
-        <section
-          style={{
-            background: "#ffffff",
-            borderRadius: "12px",
-            padding: "24px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.08)"
-          }}
-        >
+        <section style={cardStyle}>
           <h2 style={{ marginTop: 0, marginBottom: "16px", color: "#0f2d69" }}>
             Review Rubric
           </h2>
@@ -748,13 +673,15 @@ export default function ReviewQueueClient() {
               type="submit"
               disabled={saving || !selectedSubmission}
               style={{
-                backgroundColor: saving || !selectedSubmission ? "#94a3b8" : "#0f2d69",
+                backgroundColor:
+                  saving || !selectedSubmission ? "#94a3b8" : "#0f2d69",
                 color: "#ffffff",
                 border: "none",
                 borderRadius: "10px",
                 padding: "12px 18px",
                 fontWeight: 700,
-                cursor: saving || !selectedSubmission ? "not-allowed" : "pointer"
+                cursor:
+                  saving || !selectedSubmission ? "not-allowed" : "pointer"
               }}
             >
               {saving ? "Submitting Review..." : "Submit Review"}
@@ -769,27 +696,98 @@ export default function ReviewQueueClient() {
   );
 }
 
-const sectionHeadingStyle: React.CSSProperties = {
+const cardStyle: CSSProperties = {
+  background: "#ffffff",
+  borderRadius: "12px",
+  padding: "24px",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.08)"
+};
+
+const toolbarStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: "16px",
+  gap: "12px"
+};
+
+const detailHeaderStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "start",
+  gap: "16px",
+  flexWrap: "wrap",
+  marginBottom: "20px"
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  backgroundColor: "#e2e8f0",
+  color: "#0f172a",
+  border: "none",
+  borderRadius: "10px",
+  padding: "10px 14px",
+  fontWeight: 700,
+  cursor: "pointer"
+};
+
+const queueTagStyle: CSSProperties = {
+  margin: "0 0 8px 0",
+  color: "#64748b",
+  fontSize: "12px",
+  fontWeight: 700,
+  textTransform: "uppercase",
+  letterSpacing: "0.05em"
+};
+
+const queueTitleStyle: CSSProperties = {
   margin: "0 0 8px 0",
   color: "#0f172a",
   fontSize: "18px"
 };
 
-const bodyTextStyle: React.CSSProperties = {
+const queuePreviewStyle: CSSProperties = {
+  margin: "0 0 8px 0",
+  color: "#475569",
+  lineHeight: 1.5
+};
+
+const queueMetaStyle: CSSProperties = {
+  margin: 0,
+  color: "#64748b",
+  fontSize: "13px"
+};
+
+const correctPillStyle: CSSProperties = {
+  backgroundColor: "#dcfce7",
+  color: "#166534",
+  borderRadius: "999px",
+  padding: "6px 10px",
+  fontSize: "12px",
+  fontWeight: 700,
+  whiteSpace: "nowrap"
+};
+
+const sectionHeadingStyle: CSSProperties = {
+  margin: "0 0 8px 0",
+  color: "#0f172a",
+  fontSize: "18px"
+};
+
+const bodyTextStyle: CSSProperties = {
   margin: 0,
   color: "#475569",
   lineHeight: 1.7,
   whiteSpace: "pre-wrap"
 };
 
-const labelStyle: React.CSSProperties = {
+const labelStyle: CSSProperties = {
   display: "block",
   fontSize: "14px",
   fontWeight: 700,
   marginBottom: "8px"
 };
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   width: "100%",
   padding: "12px",
   borderRadius: "10px",
@@ -799,7 +797,7 @@ const inputStyle: React.CSSProperties = {
   backgroundColor: "#fff"
 };
 
-const textareaStyle: React.CSSProperties = {
+const textareaStyle: CSSProperties = {
   width: "100%",
   padding: "12px",
   borderRadius: "10px",
@@ -809,13 +807,13 @@ const textareaStyle: React.CSSProperties = {
   resize: "vertical"
 };
 
-const successStyle: React.CSSProperties = {
+const successStyle: CSSProperties = {
   marginTop: "16px",
   color: "#166534",
   fontWeight: 700
 };
 
-const errorStyle: React.CSSProperties = {
+const errorStyle: CSSProperties = {
   marginTop: "16px",
   color: "#b91c1c",
   fontWeight: 700
