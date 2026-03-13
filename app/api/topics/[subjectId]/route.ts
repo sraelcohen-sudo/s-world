@@ -5,27 +5,27 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-type RouteParams = {
-  params: {
+type RouteContext = {
+  params: Promise<{
     subjectId: string;
-  };
+  }>;
 };
 
 export async function GET(
   request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteContext
 ) {
   try {
-    const { subjectId } = params;
+    const { subjectId } = await params;
 
     const query = `
       SELECT
         id,
         name,
-    description
+        subject_id
       FROM topics
       WHERE subject_id = $1
-      ORDER BY name
+      ORDER BY name ASC
     `;
 
     const { rows } = await pool.query(query, [subjectId]);
