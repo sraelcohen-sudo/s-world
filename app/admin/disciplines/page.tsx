@@ -1,7 +1,7 @@
 import Link from "next/link";
-import AdminDisciplinesClient from "@/components/admin-disciplines-client";
+import AdminDisciplinesDashboard from "@/components/admin-disciplines-client";
 
-export default function DisciplinesAdminPage() {
+export default function AdminDisciplinesDashboardPage() {
   return (
     <main
       style={{
@@ -33,6 +33,7 @@ export default function DisciplinesAdminPage() {
           >
             Admin
           </p>
+
           <h1
             style={{
               margin: 0,
@@ -42,6 +43,7 @@ export default function DisciplinesAdminPage() {
           >
             Disciplines Dashboard
           </h1>
+
           <p
             style={{
               margin: "10px 0 0 0",
@@ -50,8 +52,8 @@ export default function DisciplinesAdminPage() {
               lineHeight: 1.6
             }}
           >
-            Add and manage disciplines under each exam track. This is the second
-            layer of the S World learning taxonomy.
+            Add and manage disciplines under each exam track. This is the
+            second layer of the S World learning taxonomy.
           </p>
         </div>
 
@@ -94,7 +96,7 @@ export default function DisciplinesAdminPage() {
         </div>
       </div>
 
-      <AdminDisciplinesClient />
+      <AdminDisciplinesDashboard />
     </main>
   );
 }
