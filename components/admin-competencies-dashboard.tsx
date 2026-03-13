@@ -4,16 +4,18 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Competency, Discipline, ExamTrack } from "@/types/database";
 
-export default function AdminCompetenciesClient() {
+export default function AdminCompetenciesDashboard() {
   const [tracks, setTracks] = useState<ExamTrack[]>([]);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [competencies, setCompetencies] = useState<Competency[]>([]);
+
   const [selectedTrackId, setSelectedTrackId] = useState("");
   const [selectedDisciplineId, setSelectedDisciplineId] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [thresholdPercent, setThresholdPercent] = useState("70");
   const [minimumQuestions, setMinimumQuestions] = useState("10");
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -23,11 +25,22 @@ export default function AdminCompetenciesClient() {
     setLoading(true);
     setError("");
 
-    const [tracksResult, disciplinesResult, competenciesResult] = await Promise.all([
-      supabase.from("exam_tracks").select("*").eq("active", true).order("name", { ascending: true }),
-      supabase.from("disciplines").select("*").order("name", { ascending: true }),
-      supabase.from("competencies").select("*").order("created_at", { ascending: true })
-    ]);
+    const [tracksResult, disciplinesResult, competenciesResult] =
+      await Promise.all([
+        supabase
+          .from("exam_tracks")
+          .select("*")
+          .eq("active", true)
+          .order("name", { ascending: true }),
+        supabase
+          .from("disciplines")
+          .select("*")
+          .order("name", { ascending: true }),
+        supabase
+          .from("competencies")
+          .select("*")
+          .order("created_at", { ascending: true })
+      ]);
 
     if (tracksResult.error) {
       setError(tracksResult.error.message);
@@ -75,19 +88,25 @@ export default function AdminCompetenciesClient() {
   }
 
   useEffect(() => {
-    loadAll();
+    void loadAll();
   }, []);
 
   const visibleDisciplines = useMemo(() => {
     const visibleTrackIds = new Set(tracks.map((track) => track.id));
+
     return disciplines.filter(
       (discipline) =>
-        discipline.exam_track_id !== null && visibleTrackIds.has(discipline.exam_track_id)
+        discipline.exam_track_id !== null &&
+        visibleTrackIds.has(discipline.exam_track_id)
     );
   }, [disciplines, tracks]);
 
   const filteredDisciplines = useMemo(() => {
-    return visibleDisciplines.filter((discipline) => discipline.exam_track_id === selectedTrackId);
+    if (!selectedTrackId) return [];
+
+    return visibleDisciplines.filter(
+      (discipline) => discipline.exam_track_id === selectedTrackId
+    );
   }, [visibleDisciplines, selectedTrackId]);
 
   useEffect(() => {
@@ -110,16 +129,20 @@ export default function AdminCompetenciesClient() {
   }, [visibleDisciplines]);
 
   const visibleCompetencies = useMemo(() => {
-    return competencies.filter((competency) => visibleDisciplineIds.has(competency.discipline_id));
+    return competencies.filter((competency) =>
+      visibleDisciplineIds.has(competency.discipline_id)
+    );
   }, [competencies, visibleDisciplineIds]);
 
   const disciplineNameById = useMemo(() => {
     const map = new Map<string, string>();
-    visibleDisciplines.forEach((discipline) => map.set(discipline.id, discipline.name));
+    visibleDisciplines.forEach((discipline) => {
+      map.set(discipline.id, discipline.name);
+    });
     return map;
   }, [visibleDisciplines]);
 
-  async function handleAddCompetency(e: React.FormEvent) {
+  async function handleAddCompetency(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     setMessage("");
@@ -158,7 +181,7 @@ export default function AdminCompetenciesClient() {
       return;
     }
 
-    const { error } = await supabase.from("competencies").insert({
+    const { error: insertError } = await supabase.from("competencies").insert({
       discipline_id: selectedDisciplineId,
       name: cleanName,
       description: cleanDescription || null,
@@ -166,8 +189,8 @@ export default function AdminCompetenciesClient() {
       minimum_questions: parsedMinimumQuestions
     });
 
-    if (error) {
-      setError(error.message);
+    if (insertError) {
+      setError(insertError.message);
       setSaving(false);
       return;
     }
@@ -392,13 +415,15 @@ export default function AdminCompetenciesClient() {
             type="submit"
             disabled={saving || filteredDisciplines.length === 0}
             style={{
-              backgroundColor: saving || filteredDisciplines.length === 0 ? "#94a3b8" : "#0f2d69",
+              backgroundColor:
+                saving || filteredDisciplines.length === 0 ? "#94a3b8" : "#0f2d69",
               color: "#ffffff",
               border: "none",
               borderRadius: "10px",
               padding: "12px 18px",
               fontWeight: 700,
-              cursor: saving || filteredDisciplines.length === 0 ? "not-allowed" : "pointer"
+              cursor:
+                saving || filteredDisciplines.length === 0 ? "not-allowed" : "pointer"
             }}
           >
             {saving ? "Saving..." : "Add Competency"}
@@ -458,7 +483,9 @@ export default function AdminCompetenciesClient() {
           </h2>
 
           <button
-            onClick={loadAll}
+            onClick={() => {
+              void loadAll();
+            }}
             style={{
               backgroundColor: "#e2e8f0",
               color: "#0f172a",
@@ -476,7 +503,9 @@ export default function AdminCompetenciesClient() {
         {loading ? (
           <p style={{ color: "#475569" }}>Loading competencies...</p>
         ) : visibleCompetencies.length === 0 ? (
-          <p style={{ color: "#475569" }}>No competencies found for visible exam tracks.</p>
+          <p style={{ color: "#475569" }}>
+            No competencies found for visible exam tracks.
+          </p>
         ) : (
           <div
             style={{
@@ -512,7 +541,8 @@ export default function AdminCompetenciesClient() {
                         letterSpacing: "0.05em"
                       }}
                     >
-                      {disciplineNameById.get(competency.discipline_id) || "Unknown discipline"}
+                      {disciplineNameById.get(competency.discipline_id) ||
+                        "Unknown discipline"}
                     </p>
 
                     <h3
