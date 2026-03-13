@@ -1,8 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties
+} from "react";
 import { supabase } from "@/lib/supabase";
-import type { Competency, Discipline, ExamTrack, Question } from "@/types/database";
+import type {
+  Competency,
+  Discipline,
+  ExamTrack,
+  Question
+} from "@/types/database";
 
 type AnswerOption = {
   id: string;
@@ -37,6 +47,11 @@ type NormalizedSessionQuestion = {
   question: QuestionJoin | null;
 };
 
+type SessionResult = {
+  selectedOptionId: string;
+  isCorrect: boolean;
+};
+
 type WeakCompetencyRow = {
   competency: Competency;
   attempted: number;
@@ -44,15 +59,15 @@ type WeakCompetencyRow = {
   percent: number;
 };
 
-export default function LearnerRemediationClient() {
+export default function LearnerRemediationDashboard() {
   const [tracks, setTracks] = useState<ExamTrack[]>([]);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [competencies, setCompetencies] = useState<Competency[]>([]);
   const [approvedQuestions, setApprovedQuestions] = useState<Question[]>([]);
   const [allOptions, setAllOptions] = useState<AnswerOption[]>([]);
-  const [sessionQuestionsHistory, setSessionQuestionsHistory] = useState<NormalizedSessionQuestion[]>(
-    []
-  );
+  const [sessionQuestionsHistory, setSessionQuestionsHistory] = useState<
+    NormalizedSessionQuestion[]
+  >([]);
 
   const [selectedTrackId, setSelectedTrackId] = useState("");
   const [selectedDisciplineId, setSelectedDisciplineId] = useState("");
@@ -60,13 +75,13 @@ export default function LearnerRemediationClient() {
 
   const [mode, setMode] = useState<SessionMode>("setup");
   const [sessionId, setSessionId] = useState("");
-  const [sessionQuestions, setSessionQuestions] = useState<PracticeQuestion[]>([]);
+  const [sessionQuestions, setSessionQuestions] = useState<PracticeQuestion[]>(
+    []
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [results, setResults] = useState<Record<string, { selectedOptionId: string; isCorrect: boolean }>>(
-    {}
-  );
+  const [results, setResults] = useState<Record<string, SessionResult>>({});
 
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
@@ -85,15 +100,25 @@ export default function LearnerRemediationClient() {
       optionsResult,
       sessionQuestionsResult
     ] = await Promise.all([
-      supabase.from("exam_tracks").select("*").eq("active", true).order("name", { ascending: true }),
+      supabase
+        .from("exam_tracks")
+        .select("*")
+        .eq("active", true)
+        .order("name", { ascending: true }),
       supabase.from("disciplines").select("*").order("name", { ascending: true }),
-      supabase.from("competencies").select("*").order("name", { ascending: true }),
+      supabase
+        .from("competencies")
+        .select("*")
+        .order("name", { ascending: true }),
       supabase
         .from("questions")
         .select("*")
         .eq("status", "approved")
         .order("created_at", { ascending: false }),
-      supabase.from("answer_options").select("*").order("option_label", { ascending: true }),
+      supabase
+        .from("answer_options")
+        .select("*")
+        .order("option_label", { ascending: true }),
       supabase
         .from("session_questions")
         .select(
@@ -153,16 +178,22 @@ export default function LearnerRemediationClient() {
     const loadedQuestions = (questionsResult.data ?? []) as Question[];
     const loadedOptions = (optionsResult.data ?? []) as AnswerOption[];
 
-    const rawHistory = ((sessionQuestionsResult.data ?? []) as unknown[]) as RawSessionQuestion[];
-    const normalizedHistory: NormalizedSessionQuestion[] = rawHistory.map((row) => {
-      const question = Array.isArray(row.questions) ? row.questions[0] ?? null : row.questions ?? null;
+    const rawHistory = (sessionQuestionsResult.data ??
+      []) as RawSessionQuestion[];
 
-      return {
-        id: row.id,
-        is_correct: row.is_correct,
-        question
-      };
-    });
+    const normalizedHistory: NormalizedSessionQuestion[] = rawHistory.map(
+      (row) => {
+        const question = Array.isArray(row.questions)
+          ? row.questions[0] ?? null
+          : row.questions ?? null;
+
+        return {
+          id: row.id,
+          is_correct: row.is_correct,
+          question
+        };
+      }
+    );
 
     setTracks(loadedTracks);
     setDisciplines(loadedDisciplines);
@@ -191,19 +222,23 @@ export default function LearnerRemediationClient() {
   }
 
   useEffect(() => {
-    loadAll();
+    void loadAll();
   }, []);
 
   const visibleDisciplines = useMemo(() => {
     const visibleTrackIds = new Set(tracks.map((track) => track.id));
+
     return disciplines.filter(
       (discipline) =>
-        discipline.exam_track_id !== null && visibleTrackIds.has(discipline.exam_track_id)
+        discipline.exam_track_id !== null &&
+        visibleTrackIds.has(discipline.exam_track_id)
     );
   }, [disciplines, tracks]);
 
   const filteredDisciplines = useMemo(() => {
-    return visibleDisciplines.filter((discipline) => discipline.exam_track_id === selectedTrackId);
+    return visibleDisciplines.filter(
+      (discipline) => discipline.exam_track_id === selectedTrackId
+    );
   }, [visibleDisciplines, selectedTrackId]);
 
   useEffect(() => {
@@ -212,14 +247,19 @@ export default function LearnerRemediationClient() {
       return;
     }
 
-    const exists = filteredDisciplines.some((discipline) => discipline.id === selectedDisciplineId);
+    const exists = filteredDisciplines.some(
+      (discipline) => discipline.id === selectedDisciplineId
+    );
+
     if (!exists) {
       setSelectedDisciplineId(filteredDisciplines[0].id);
     }
   }, [filteredDisciplines, selectedDisciplineId]);
 
   const filteredCompetencies = useMemo(() => {
-    return competencies.filter((competency) => competency.discipline_id === selectedDisciplineId);
+    return competencies.filter(
+      (competency) => competency.discipline_id === selectedDisciplineId
+    );
   }, [competencies, selectedDisciplineId]);
 
   const weakCompetencies = useMemo<WeakCompetencyRow[]>(() => {
@@ -233,8 +273,11 @@ export default function LearnerRemediationClient() {
         );
 
         const attempted = relatedAnswers.length;
-        const correct = relatedAnswers.filter((row) => row.is_correct === true).length;
-        const percent = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
+        const correct = relatedAnswers.filter(
+          (row) => row.is_correct === true
+        ).length;
+        const percent =
+          attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
 
         return {
           competency,
@@ -249,10 +292,17 @@ export default function LearnerRemediationClient() {
           row.percent < row.competency.threshold_percent
       )
       .sort((a, b) => a.percent - b.percent);
-  }, [filteredCompetencies, sessionQuestionsHistory, selectedTrackId, selectedDisciplineId]);
+  }, [
+    filteredCompetencies,
+    sessionQuestionsHistory,
+    selectedTrackId,
+    selectedDisciplineId
+  ]);
 
   const remediationQuestionPool = useMemo(() => {
-    const weakCompetencyIds = new Set(weakCompetencies.map((row) => row.competency.id));
+    const weakCompetencyIds = new Set(
+      weakCompetencies.map((row) => row.competency.id)
+    );
 
     return approvedQuestions.filter(
       (question) =>
@@ -261,7 +311,12 @@ export default function LearnerRemediationClient() {
         question.competency_id !== null &&
         weakCompetencyIds.has(question.competency_id)
     );
-  }, [approvedQuestions, weakCompetencies, selectedTrackId, selectedDisciplineId]);
+  }, [
+    approvedQuestions,
+    weakCompetencies,
+    selectedTrackId,
+    selectedDisciplineId
+  ]);
 
   const currentQuestion = sessionQuestions[currentIndex] ?? null;
   const correctOptionId =
@@ -297,7 +352,9 @@ export default function LearnerRemediationClient() {
     }
 
     if (remediationQuestionPool.length === 0) {
-      setError("No approved questions are available for the below-threshold competencies.");
+      setError(
+        "No approved questions are available for the below-threshold competencies."
+      );
       setStarting(false);
       return;
     }
@@ -313,7 +370,9 @@ export default function LearnerRemediationClient() {
       .filter((question) => question.options.length >= 2);
 
     if (chosenQuestions.length === 0) {
-      setError("Remediation questions were found, but no answer options are attached.");
+      setError(
+        "Remediation questions were found, but no answer options are attached."
+      );
       setStarting(false);
       return;
     }
@@ -384,7 +443,7 @@ export default function LearnerRemediationClient() {
 
     setSubmitted(true);
 
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from("session_questions")
       .update({
         selected_option_id: selectedOptionId,
@@ -394,8 +453,8 @@ export default function LearnerRemediationClient() {
       .eq("session_id", sessionId)
       .eq("question_id", currentQuestion.id);
 
-    if (error) {
-      setError(error.message);
+    if (updateError) {
+      setError(updateError.message);
     }
   }
 
@@ -408,12 +467,16 @@ export default function LearnerRemediationClient() {
       return;
     }
 
-    await supabase
+    const { error: finishError } = await supabase
       .from("study_sessions")
       .update({
         ended_at: new Date().toISOString()
       })
       .eq("id", sessionId);
+
+    if (finishError) {
+      setError(finishError.message);
+    }
 
     setMode("finished");
   }
@@ -428,8 +491,10 @@ export default function LearnerRemediationClient() {
     setResults({});
     setMessage("");
     setError("");
-    loadAll();
+    void loadAll();
   }
+
+  const currentResult = currentQuestion ? results[currentQuestion.id] : undefined;
 
   return (
     <div style={{ display: "grid", gap: "24px" }}>
@@ -497,38 +562,28 @@ export default function LearnerRemediationClient() {
                   style={inputStyle}
                 />
 
-                <div
-                  style={{
-                    marginBottom: "16px",
-                    padding: "12px",
-                    borderRadius: "10px",
-                    backgroundColor: "#f8fafc",
-                    color: "#334155",
-                    fontWeight: 700
-                  }}
-                >
+                <div style={infoBoxStyle}>
                   Below-threshold competencies: {weakCompetencies.length}
                 </div>
 
-                <div
-                  style={{
-                    marginBottom: "16px",
-                    padding: "12px",
-                    borderRadius: "10px",
-                    backgroundColor: "#f8fafc",
-                    color: "#334155",
-                    fontWeight: 700
-                  }}
-                >
+                <div style={infoBoxStyle}>
                   Remediation question pool: {remediationQuestionPool.length}
                 </div>
 
                 <button
-                  onClick={startRemediationSession}
-                  disabled={starting || weakCompetencies.length === 0 || remediationQuestionPool.length === 0}
+                  onClick={() => {
+                    void startRemediationSession();
+                  }}
+                  disabled={
+                    starting ||
+                    weakCompetencies.length === 0 ||
+                    remediationQuestionPool.length === 0
+                  }
                   style={{
                     backgroundColor:
-                      starting || weakCompetencies.length === 0 || remediationQuestionPool.length === 0
+                      starting ||
+                      weakCompetencies.length === 0 ||
+                      remediationQuestionPool.length === 0
                         ? "#94a3b8"
                         : "#0f2d69",
                     color: "#ffffff",
@@ -537,7 +592,9 @@ export default function LearnerRemediationClient() {
                     padding: "12px 18px",
                     fontWeight: 700,
                     cursor:
-                      starting || weakCompetencies.length === 0 || remediationQuestionPool.length === 0
+                      starting ||
+                      weakCompetencies.length === 0 ||
+                      remediationQuestionPool.length === 0
                         ? "not-allowed"
                         : "pointer"
                   }}
@@ -579,16 +636,30 @@ export default function LearnerRemediationClient() {
                         padding: "16px"
                       }}
                     >
-                      <h3 style={{ margin: "0 0 8px 0", color: "#0f172a", fontSize: "20px" }}>
+                      <h3
+                        style={{
+                          margin: "0 0 8px 0",
+                          color: "#0f172a",
+                          fontSize: "20px"
+                        }}
+                      >
                         {row.competency.name}
                       </h3>
 
-                      <p style={{ margin: "0 0 12px 0", color: "#475569", lineHeight: 1.6 }}>
+                      <p
+                        style={{
+                          margin: "0 0 12px 0",
+                          color: "#475569",
+                          lineHeight: 1.6
+                        }}
+                      >
                         {row.competency.description || "No description provided."}
                       </p>
 
                       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                        <span style={summaryPillStyle}>Attempted: {row.attempted}</span>
+                        <span style={summaryPillStyle}>
+                          Attempted: {row.attempted}
+                        </span>
                         <span style={summaryPillStyle}>Correct: {row.correct}</span>
                         <span style={summaryPillStyle}>Accuracy: {row.percent}%</span>
                         <span style={summaryPillStyle}>
@@ -667,7 +738,9 @@ export default function LearnerRemediationClient() {
                   return (
                     <button
                       key={option.id}
-                      onClick={() => !submitted && setSelectedOptionId(option.id)}
+                      onClick={() => {
+                        if (!submitted) setSelectedOptionId(option.id);
+                      }}
                       disabled={submitted}
                       style={{
                         textAlign: "left",
@@ -690,7 +763,9 @@ export default function LearnerRemediationClient() {
                         cursor: submitted ? "default" : "pointer"
                       }}
                     >
-                      <strong style={{ color: "#7c2d12" }}>{option.option_label}.</strong>{" "}
+                      <strong style={{ color: "#7c2d12" }}>
+                        {option.option_label}.
+                      </strong>{" "}
                       <span style={{ color: "#334155" }}>{option.option_text}</span>
                     </button>
                   );
@@ -706,12 +781,24 @@ export default function LearnerRemediationClient() {
                 }}
               >
                 {!submitted ? (
-                  <button onClick={submitAnswer} style={remediationButtonStyle}>
+                  <button
+                    onClick={() => {
+                      void submitAnswer();
+                    }}
+                    style={remediationButtonStyle}
+                  >
                     Submit Answer
                   </button>
                 ) : (
-                  <button onClick={goToNext} style={remediationButtonStyle}>
-                    {currentIndex === sessionQuestions.length - 1 ? "Finish Block" : "Next Question"}
+                  <button
+                    onClick={() => {
+                      void goToNext();
+                    }}
+                    style={remediationButtonStyle}
+                  >
+                    {currentIndex === sessionQuestions.length - 1
+                      ? "Finish Block"
+                      : "Next Question"}
                   </button>
                 )}
               </div>
@@ -751,17 +838,20 @@ export default function LearnerRemediationClient() {
                       marginBottom: "16px",
                       padding: "12px",
                       borderRadius: "10px",
-                      backgroundColor:
-                        results[currentQuestion.id]?.isCorrect ? "#dcfce7" : "#fee2e2",
-                      color: results[currentQuestion.id]?.isCorrect ? "#166534" : "#b91c1c",
+                      backgroundColor: currentResult?.isCorrect
+                        ? "#dcfce7"
+                        : "#fee2e2",
+                      color: currentResult?.isCorrect ? "#166534" : "#b91c1c",
                       fontWeight: 700
                     }}
                   >
-                    {results[currentQuestion.id]?.isCorrect ? "Correct" : "Incorrect"}
+                    {currentResult?.isCorrect ? "Correct" : "Incorrect"}
                   </div>
 
                   <h3 style={sideHeadingStyle}>Explanation</h3>
-                  <p style={sideBodyStyle}>{currentQuestion.explanation}</p>
+                  <p style={sideBodyStyle}>
+                    {currentQuestion.explanation || "No explanation provided."}
+                  </p>
 
                   {currentQuestion.strategy_text ? (
                     <>
@@ -800,7 +890,9 @@ export default function LearnerRemediationClient() {
             boxShadow: "0 1px 3px rgba(0,0,0,0.08)"
           }}
         >
-          <h2 style={{ marginTop: 0, color: "#7c2d12" }}>Remediation Block Complete</h2>
+          <h2 style={{ marginTop: 0, color: "#7c2d12" }}>
+            Remediation Block Complete
+          </h2>
 
           <div
             style={{
@@ -814,13 +906,18 @@ export default function LearnerRemediationClient() {
               Score: {score} / {sessionQuestions.length}
             </span>
             <span style={summaryPillStyle}>
-              Accuracy: {sessionQuestions.length > 0 ? Math.round((score / sessionQuestions.length) * 100) : 0}%
+              Accuracy:{" "}
+              {sessionQuestions.length > 0
+                ? Math.round((score / sessionQuestions.length) * 100)
+                : 0}
+              %
             </span>
           </div>
 
           <div style={{ display: "grid", gap: "12px", marginBottom: "24px" }}>
             {sessionQuestions.map((question, index) => {
               const result = results[question.id];
+
               return (
                 <article
                   key={question.id}
@@ -843,7 +940,13 @@ export default function LearnerRemediationClient() {
                     Question {index + 1}
                   </p>
 
-                  <h3 style={{ margin: "0 0 8px 0", color: "#0f172a", fontSize: "18px" }}>
+                  <h3
+                    style={{
+                      margin: "0 0 8px 0",
+                      color: "#0f172a",
+                      fontSize: "18px"
+                    }}
+                  >
                     {question.title || "Untitled question"}
                   </h3>
 
@@ -864,14 +967,14 @@ export default function LearnerRemediationClient() {
   );
 }
 
-const labelStyle: React.CSSProperties = {
+const labelStyle: CSSProperties = {
   display: "block",
   fontSize: "14px",
   fontWeight: 700,
   marginBottom: "8px"
 };
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   width: "100%",
   padding: "12px",
   borderRadius: "10px",
@@ -882,7 +985,7 @@ const inputStyle: React.CSSProperties = {
   maxWidth: "520px"
 };
 
-const remediationButtonStyle: React.CSSProperties = {
+const remediationButtonStyle: CSSProperties = {
   backgroundColor: "#7c2d12",
   color: "#ffffff",
   border: "none",
@@ -892,26 +995,26 @@ const remediationButtonStyle: React.CSSProperties = {
   cursor: "pointer"
 };
 
-const questionTextStyle: React.CSSProperties = {
+const questionTextStyle: CSSProperties = {
   color: "#334155",
   lineHeight: 1.7,
   whiteSpace: "pre-wrap"
 };
 
-const sideHeadingStyle: React.CSSProperties = {
+const sideHeadingStyle: CSSProperties = {
   margin: "18px 0 8px 0",
   color: "#0f172a",
   fontSize: "18px"
 };
 
-const sideBodyStyle: React.CSSProperties = {
+const sideBodyStyle: CSSProperties = {
   margin: 0,
   color: "#475569",
   lineHeight: 1.7,
   whiteSpace: "pre-wrap"
 };
 
-const summaryPillStyle: React.CSSProperties = {
+const summaryPillStyle: CSSProperties = {
   borderRadius: "999px",
   padding: "8px 12px",
   fontSize: "12px",
@@ -920,13 +1023,22 @@ const summaryPillStyle: React.CSSProperties = {
   color: "#9a3412"
 };
 
-const successStyle: React.CSSProperties = {
+const infoBoxStyle: CSSProperties = {
+  marginBottom: "16px",
+  padding: "12px",
+  borderRadius: "10px",
+  backgroundColor: "#f8fafc",
+  color: "#334155",
+  fontWeight: 700
+};
+
+const successStyle: CSSProperties = {
   marginTop: "16px",
   color: "#166534",
   fontWeight: 700
 };
 
-const errorStyle: React.CSSProperties = {
+const errorStyle: CSSProperties = {
   marginTop: "16px",
   color: "#b91c1c",
   fontWeight: 700
