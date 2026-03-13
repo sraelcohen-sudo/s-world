@@ -1,19 +1,42 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 
-export default function QuestionPage({ params }: any) {
-  const [questions, setQuestions] = useState([])
+type Question = {
+  id: string;
+  stem: string;
+  option_a: string | null;
+  option_b: string | null;
+  option_c: string | null;
+  option_d: string | null;
+  option_e: string | null;
+  correct_answer?: string;
+  explanation?: string | null;
+};
+
+export default function QuestionPage({
+  params,
+}: {
+  params: { subtopicId: string };
+}) {
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/questions/${params.subtopicId}`)
-      .then(res => res.json())
-      .then(setQuestions)
-  }, [])
+    async function loadQuestions() {
+      const res = await fetch(`/api/questions/${params.subtopicId}`);
+      const data: Question[] = await res.json();
+      setQuestions(data);
+      setLoading(false);
+    }
 
-  if (!questions.length) return <div>Loading...</div>
+    loadQuestions();
+  }, [params.subtopicId]);
 
-  const q = questions[0]
+  if (loading) return <div>Loading...</div>;
+  if (questions.length === 0) return <div>No questions found.</div>;
+
+  const q = questions[0];
 
   return (
     <div>
@@ -25,5 +48,5 @@ export default function QuestionPage({ params }: any) {
       <button>{q.option_d}</button>
       <button>{q.option_e}</button>
     </div>
-  )
+  );
 }
