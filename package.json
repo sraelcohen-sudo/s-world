@@ -19,5 +19,6 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "typescript": "latest"
+    "@types/pg": "^8.15.6"
   }
 }
