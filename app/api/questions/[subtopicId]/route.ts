@@ -5,18 +5,18 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-type RouteParams = {
-  params: {
+type RouteContext = {
+  params: Promise<{
     subtopicId: string;
-  };
+  }>;
 };
 
 export async function GET(
   request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteContext
 ) {
   try {
-    const { subtopicId } = params;
+    const { subtopicId } = await params;
 
     const query = `
       SELECT
@@ -40,7 +40,6 @@ export async function GET(
       success: true,
       questions: rows,
     });
-
   } catch (error) {
     console.error("Error fetching questions:", error);
 
