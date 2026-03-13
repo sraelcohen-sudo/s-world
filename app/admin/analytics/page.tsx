@@ -1,7 +1,7 @@
 import Link from "next/link";
-import AdminAnalyticsClient from "@/components/admin-analytics-client";
+import AdminAnalyticsDashboard from "@/components/admin-analytics-client";
 
-export default function AdminAnalyticsPage() {
+export default function AdminAnalyticsDashboardPage() {
   return (
     <main
       style={{
@@ -33,6 +33,7 @@ export default function AdminAnalyticsPage() {
           >
             Admin
           </p>
+
           <h1
             style={{
               margin: 0,
@@ -42,6 +43,7 @@ export default function AdminAnalyticsPage() {
           >
             Analytics Dashboard
           </h1>
+
           <p
             style={{
               margin: "10px 0 0 0",
@@ -88,7 +90,7 @@ export default function AdminAnalyticsPage() {
         </div>
       </div>
 
-      <AdminAnalyticsClient />
+      <AdminAnalyticsDashboard />
     </main>
   );
 }
