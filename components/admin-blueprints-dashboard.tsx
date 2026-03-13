@@ -2,9 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Blueprint, Competency, Discipline, ExamTrack } from "@/types/database";
+import type {
+  Blueprint,
+  Competency,
+  Discipline,
+  ExamTrack
+} from "@/types/database";
 
-export default function AdminBlueprintsClient() {
+export default function AdminBlueprintsDashboard() {
   const [tracks, setTracks] = useState<ExamTrack[]>([]);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [competencies, setCompetencies] = useState<Competency[]>([]);
@@ -30,10 +35,23 @@ export default function AdminBlueprintsClient() {
       competenciesResult,
       blueprintsResult
     ] = await Promise.all([
-      supabase.from("exam_tracks").select("*").eq("active", true).order("name", { ascending: true }),
-      supabase.from("disciplines").select("*").order("name", { ascending: true }),
-      supabase.from("competencies").select("*").order("name", { ascending: true }),
-      supabase.from("blueprints").select("*").order("created_at", { ascending: true })
+      supabase
+        .from("exam_tracks")
+        .select("*")
+        .eq("active", true)
+        .order("name", { ascending: true }),
+      supabase
+        .from("disciplines")
+        .select("*")
+        .order("name", { ascending: true }),
+      supabase
+        .from("competencies")
+        .select("*")
+        .order("name", { ascending: true }),
+      supabase
+        .from("blueprints")
+        .select("*")
+        .order("created_at", { ascending: true })
     ]);
 
     if (tracksResult.error) {
@@ -90,20 +108,25 @@ export default function AdminBlueprintsClient() {
   }
 
   useEffect(() => {
-    loadAll();
+    void loadAll();
   }, []);
 
   const visibleDisciplines = useMemo(() => {
     const visibleTrackIds = new Set(tracks.map((track) => track.id));
+
     return disciplines.filter(
       (discipline) =>
-        discipline.exam_track_id !== null && visibleTrackIds.has(discipline.exam_track_id)
+        discipline.exam_track_id !== null &&
+        visibleTrackIds.has(discipline.exam_track_id)
     );
   }, [disciplines, tracks]);
 
   const filteredDisciplines = useMemo(() => {
     if (!selectedTrackId) return [];
-    return visibleDisciplines.filter((discipline) => discipline.exam_track_id === selectedTrackId);
+
+    return visibleDisciplines.filter(
+      (discipline) => discipline.exam_track_id === selectedTrackId
+    );
   }, [visibleDisciplines, selectedTrackId]);
 
   useEffect(() => {
@@ -126,11 +149,14 @@ export default function AdminBlueprintsClient() {
   }, [visibleDisciplines]);
 
   const visibleCompetencies = useMemo(() => {
-    return competencies.filter((competency) => visibleDisciplineIds.has(competency.discipline_id));
+    return competencies.filter((competency) =>
+      visibleDisciplineIds.has(competency.discipline_id)
+    );
   }, [competencies, visibleDisciplineIds]);
 
   const filteredCompetencies = useMemo(() => {
     if (!selectedDisciplineId) return [];
+
     return visibleCompetencies.filter(
       (competency) => competency.discipline_id === selectedDisciplineId
     );
@@ -184,7 +210,7 @@ export default function AdminBlueprintsClient() {
     );
   }, [currentBlueprints]);
 
-  async function handleAddBlueprint(e: React.FormEvent) {
+  async function handleAddBlueprint(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     setMessage("");
@@ -233,15 +259,15 @@ export default function AdminBlueprintsClient() {
       return;
     }
 
-    const { error } = await supabase.from("blueprints").insert({
+    const { error: insertError } = await supabase.from("blueprints").insert({
       exam_track_id: selectedTrackId,
       discipline_id: selectedDisciplineId,
       competency_id: selectedCompetencyId,
       target_percent: parsedPercent
     });
 
-    if (error) {
-      setError(error.message);
+    if (insertError) {
+      setError(insertError.message);
       setSaving(false);
       return;
     }
@@ -256,10 +282,13 @@ export default function AdminBlueprintsClient() {
     setMessage("");
     setError("");
 
-    const { error } = await supabase.from("blueprints").delete().eq("id", id);
+    const { error: deleteError } = await supabase
+      .from("blueprints")
+      .delete()
+      .eq("id", id);
 
-    if (error) {
-      setError(error.message);
+    if (deleteError) {
+      setError(deleteError.message);
       return;
     }
 
@@ -448,10 +477,18 @@ export default function AdminBlueprintsClient() {
 
           <button
             type="submit"
-            disabled={saving || !selectedTrackId || !selectedDisciplineId || !selectedCompetencyId}
+            disabled={
+              saving ||
+              !selectedTrackId ||
+              !selectedDisciplineId ||
+              !selectedCompetencyId
+            }
             style={{
               backgroundColor:
-                saving || !selectedTrackId || !selectedDisciplineId || !selectedCompetencyId
+                saving ||
+                !selectedTrackId ||
+                !selectedDisciplineId ||
+                !selectedCompetencyId
                   ? "#94a3b8"
                   : "#0f2d69",
               color: "#ffffff",
@@ -460,7 +497,10 @@ export default function AdminBlueprintsClient() {
               padding: "12px 18px",
               fontWeight: 700,
               cursor:
-                saving || !selectedTrackId || !selectedDisciplineId || !selectedCompetencyId
+                saving ||
+                !selectedTrackId ||
+                !selectedDisciplineId ||
+                !selectedCompetencyId
                   ? "not-allowed"
                   : "pointer"
             }}
@@ -536,7 +576,9 @@ export default function AdminBlueprintsClient() {
           </div>
 
           <button
-            onClick={loadAll}
+            onClick={() => {
+              void loadAll();
+            }}
             style={{
               backgroundColor: "#e2e8f0",
               color: "#0f172a",
@@ -614,9 +656,13 @@ export default function AdminBlueprintsClient() {
                           letterSpacing: "0.05em"
                         }}
                       >
-                        {trackNameById.get(blueprint.exam_track_id) || "Unknown track"} →{" "}
+                        {blueprint.exam_track_id
+                          ? trackNameById.get(blueprint.exam_track_id) || "Unknown track"
+                          : "Unknown track"}{" "}
+                        →{" "}
                         {blueprint.discipline_id
-                          ? disciplineNameById.get(blueprint.discipline_id) || "Unknown discipline"
+                          ? disciplineNameById.get(blueprint.discipline_id) ||
+                            "Unknown discipline"
                           : "No discipline"}
                       </p>
 
@@ -628,7 +674,8 @@ export default function AdminBlueprintsClient() {
                         }}
                       >
                         {blueprint.competency_id
-                          ? competencyNameById.get(blueprint.competency_id) || "Unknown competency"
+                          ? competencyNameById.get(blueprint.competency_id) ||
+                            "Unknown competency"
                           : "No competency"}
                       </h3>
 
@@ -647,7 +694,9 @@ export default function AdminBlueprintsClient() {
                     </div>
 
                     <button
-                      onClick={() => handleDeleteBlueprint(blueprint.id)}
+                      onClick={() => {
+                        void handleDeleteBlueprint(blueprint.id);
+                      }}
                       style={{
                         backgroundColor: "#fee2e2",
                         color: "#b91c1c",
