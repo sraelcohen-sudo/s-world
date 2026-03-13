@@ -1,5 +1,5 @@
 import Link from "next/link";
-import AdminAnalyticsDashboard from "@/components/admin-analytics-client";
+import AdminAnalyticsDashboard from "@/components/admin-analytics-dashboard";
 
 export default function AdminAnalyticsDashboardPage() {
   return (

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import LearnerProgressDashboard from "@/components/learner-progress-client";
+import LearnerProgressDashboard from "@/components/learner-progress-dashboard";
 
 export default function LearnerProgressDashboardPage() {
   return (

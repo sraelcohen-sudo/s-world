@@ -1,5 +1,5 @@
 import Link from "next/link";
-import AuthorQuestionSubmissionDashboard from "@/components/question-author-client";
+import AuthorQuestionSubmissionDashboard from "@/components/author-question-submission-dashboard";
 
 export default function AuthorQuestionSubmissionPage() {
   return (

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import LearnerPracticeDashboard from "@/components/learner-practice-client";
+import LearnerPracticeDashboard from "@/components/learner-practice-dashboard";
 
 export default function LearnerPracticeDashboardPage() {
   return (

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import AuthorRewardsDashboard from "@/components/contributor-rewards-client";
+import AuthorRewardsDashboard from "@/components/author-rewards-dashboard";
 
 export default function AuthorRewardsDashboardPage() {
   return (

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import AdminCompetenciesDashboard from "@/components/admin-competencies-client";
+import AdminCompetenciesDashboard from "@/components/admin-competencies-dashboard";
 
 export default function AdminCompetenciesDashboardPage() {
   return (

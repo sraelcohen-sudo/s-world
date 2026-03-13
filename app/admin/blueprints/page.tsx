@@ -1,5 +1,5 @@
 import Link from "next/link";
-import AdminBlueprintsDashboard from "@/components/admin-blueprints-client";
+import AdminBlueprintsDashboard from "@/components/admin-blueprints-dashboard";
 
 export default function AdminBlueprintsDashboardPage() {
   return (

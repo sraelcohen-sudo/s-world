@@ -1,5 +1,5 @@
 import Link from "next/link";
-import ReviewerQueueDashboard from "@/components/review-queue-client";
+import ReviewerQueueDashboard from "@/components/reviewer-queue-dashboard";
 
 export default function ReviewerQueueDashboardPage() {
   return (

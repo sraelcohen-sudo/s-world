@@ -1,5 +1,5 @@
 import Link from "next/link";
-import LearnerRemediationDashboard from "@/components/learner-remediation-client";
+import LearnerRemediationDashboard from "@/components/learner-remediation-dashboard";
 
 export default function LearnerRemediationDashboardPage() {
   return (

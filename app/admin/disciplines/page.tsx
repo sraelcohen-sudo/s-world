@@ -1,5 +1,5 @@
 import Link from "next/link";
-import AdminDisciplinesDashboard from "@/components/admin-disciplines-client";
+import AdminDisciplinesDashboard from "@/components/admin-disciplines-dashboard";
 
 export default function AdminDisciplinesDashboardPage() {
   return (

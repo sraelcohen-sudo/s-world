@@ -1,5 +1,5 @@
 import Link from "next/link";
-import AdminTaxonomyDashboard from "@/components/admin-taxonomy-client";
+import AdminTaxonomyDashboard from "@/components/admin-taxonomy-dashboard";
 
 export default function AdminTaxonomyDashboardPage() {
   return (
