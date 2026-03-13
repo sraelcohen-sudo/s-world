@@ -1,7 +1,7 @@
 import Link from "next/link";
-import LearnerProgressClient from "@/components/learner-progress-client";
+import LearnerProgressDashboard from "@/components/learner-progress-client";
 
-export default function LearnProgressPage() {
+export default function LearnerProgressDashboardPage() {
   return (
     <main
       style={{
@@ -33,6 +33,7 @@ export default function LearnProgressPage() {
           >
             Learner Portal
           </p>
+
           <h1
             style={{
               margin: 0,
@@ -42,6 +43,7 @@ export default function LearnProgressPage() {
           >
             Competency Progress
           </h1>
+
           <p
             style={{
               margin: "10px 0 0 0",
@@ -87,7 +89,7 @@ export default function LearnProgressPage() {
         </div>
       </div>
 
-      <LearnerProgressClient />
+      <LearnerProgressDashboard />
     </main>
   );
 }
